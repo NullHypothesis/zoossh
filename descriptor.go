@@ -3,7 +3,6 @@
 package zoossh
 
 import (
-	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
@@ -71,7 +70,7 @@ type RouterDescriptor struct {
 	Reject []*ExitPattern
 }
 
-func ParseDescriptorString(rawDescriptor string) (*RouterDescriptor, error) {
+func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 
 	var descriptor *RouterDescriptor = new(RouterDescriptor)
 	var port uint64
@@ -134,31 +133,26 @@ func ParseDescriptorString(rawDescriptor string) (*RouterDescriptor, error) {
 
 func ParseDescriptorFile(fileName string) ([]RouterDescriptor, error) {
 
-	blurb, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		return nil, err
-	}
-
-	var rawDescs string = string(blurb)
 	var descriptors []RouterDescriptor
 
-	for {
-		// Jump to the end of the next relay descriptor.
-		position := strings.Index(rawDescs, descriptorDelimiter)
-		if position == -1 {
-			break
-		}
-		position += len(descriptorDelimiter)
+	// We will read raw router descriptors from this channel.
+	queue := make(chan QueueUnit)
 
-		// Turn raw textual descriptor into struct.
-		descriptor, err := ParseDescriptorString(rawDescs[:position])
+	go ParseFile(fileName, Delimiter{descriptorDelimiter, uint(len(descriptorDelimiter))}, queue)
+
+	// Parse incoming descriptors until the channel is closed by the remote
+	// end.
+	for unit := range queue {
+		if unit.Err != nil {
+			return nil, unit.Err
+		}
+
+		descriptor, err := ParseRawDescriptor(unit.Blurb)
 		if err != nil {
 			return nil, err
 		}
-		descriptors = append(descriptors, *descriptor)
 
-		// Point to the beginning of the next relay descriptor.
-		rawDescs = rawDescs[position:]
+		descriptors = append(descriptors, *descriptor)
 	}
 
 	return descriptors, nil
