@@ -17,7 +17,7 @@ type Delimiter struct {
 	Offset  uint
 }
 
-func ParseFile(fileName string, delim Delimiter, queue chan QueueUnit) {
+func DissectFile(fileName string, delim Delimiter, queue chan QueueUnit) {
 
 	defer close(queue)
 

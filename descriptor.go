@@ -138,7 +138,7 @@ func ParseDescriptorFile(fileName string) ([]RouterDescriptor, error) {
 	// We will read raw router descriptors from this channel.
 	queue := make(chan QueueUnit)
 
-	go ParseFile(fileName, Delimiter{descriptorDelimiter, uint(len(descriptorDelimiter))}, queue)
+	go DissectFile(fileName, Delimiter{descriptorDelimiter, uint(len(descriptorDelimiter))}, queue)
 
 	// Parse incoming descriptors until the channel is closed by the remote
 	// end.

@@ -153,7 +153,7 @@ func ParseConsensusFile(fileName string) ([]RouterStatus, error) {
 	// We will read raw router statuses from this channel.
 	queue := make(chan QueueUnit)
 
-	go ParseFile(fileName, Delimiter{"\nr ", 1}, queue)
+	go DissectFile(fileName, Delimiter{"\nr ", 1}, queue)
 
 	// Parse incoming router statuses until the channel is closed by the remote
 	// end.
