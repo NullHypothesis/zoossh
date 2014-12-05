@@ -13,6 +13,10 @@ const (
 	descriptorDelimiter string = "-----END SIGNATURE-----"
 	// The layout of the "published" field.
 	publishedTimeLayout string = "2006-01-02 15:04:05"
+	// The file format we currently (try to) support.
+	supportedDescriptorType  string = "server-descriptor"
+	supportedDescriptorMajor string = "1"
+	supportedDescriptorMinor string = "0"
 )
 
 // An exitpattern as defined in dirspec.txt, Section 2.1.3.
@@ -134,6 +138,17 @@ func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 func ParseDescriptorFile(fileName string) ([]RouterDescriptor, error) {
 
 	var descriptors []RouterDescriptor
+
+	// Check if the file's annotation is as expected.
+	expected := &Annotation{
+		supportedDescriptorType,
+		supportedDescriptorMajor,
+		supportedDescriptorMinor,
+	}
+	err := CheckAnnotation(fileName, expected)
+	if err != nil {
+		return nil, err
+	}
 
 	// We will read raw router descriptors from this channel.
 	queue := make(chan QueueUnit)

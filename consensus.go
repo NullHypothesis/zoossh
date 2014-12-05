@@ -3,16 +3,20 @@
 package zoossh
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"strconv"
 	"strings"
 	"time"
-	"encoding/base64"
-	"encoding/hex"
 )
 
 const (
 	// The beginning of a new router status.
 	statusDelimiter string = "\nr "
+	// The file format we currently (try to) support.
+	supportedStatusType  string = "network-status-consensus-3"
+	supportedStatusMajor string = "1"
+	supportedStatusMinor string = "0"
 )
 
 type RouterFlags struct {
@@ -149,6 +153,17 @@ func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 func ParseConsensusFile(fileName string) ([]RouterStatus, error) {
 
 	var statuses []RouterStatus
+
+	// Check if the file's annotation is as expected.
+	expected := &Annotation{
+		supportedStatusType,
+		supportedStatusMajor,
+		supportedStatusMinor,
+	}
+	err := CheckAnnotation(fileName, expected)
+	if err != nil {
+		return nil, err
+	}
 
 	// We will read raw router statuses from this channel.
 	queue := make(chan QueueUnit)
