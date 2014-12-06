@@ -97,6 +97,9 @@ func parseRouterFlags(flags []string) *RouterFlags {
 	return routerFlags
 }
 
+// Parses a raw router status (in string format) and returns the status as a
+// RouterStatus struct.  If there were any errors during parsing, an error
+// string is returned.
 func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 
 	var status *RouterStatus = new(RouterStatus)
@@ -150,6 +153,8 @@ func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 	return status, nil
 }
 
+// Parses the given file and returns a slice of RouterStatus structs is parsing
+// was successful.  If there were any errors, an error string is returned.
 func ParseConsensusFile(fileName string) ([]RouterStatus, error) {
 
 	var statuses []RouterStatus

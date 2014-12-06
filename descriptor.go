@@ -74,6 +74,9 @@ type RouterDescriptor struct {
 	Reject []*ExitPattern
 }
 
+// Parses a raw router descriptor (in string format) and returns the descriptor
+// as a RouterDescriptor struct.  If there are any errors during parsing, an
+// error string is returned.
 func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 
 	var descriptor *RouterDescriptor = new(RouterDescriptor)
@@ -135,6 +138,9 @@ func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 	return descriptor, nil
 }
 
+// Parses the given file and returns a slice of RouterDescriptor structs if
+// parsing was successful.  If there were any errors, an error string is
+// returned.
 func ParseDescriptorFile(fileName string) ([]RouterDescriptor, error) {
 
 	var descriptors []RouterDescriptor

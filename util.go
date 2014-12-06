@@ -31,6 +31,9 @@ func (a *Annotation) String() string {
 	return fmt.Sprintf("@type %s %s.%s", a.Type, a.Major, a.Minor)
 }
 
+// Checks the type annotation in the given file.  The Annotation struct
+// determines what we want to see in the file.  If we don't see the expected
+// annotation, an error string is returned.
 func CheckAnnotation(fileName string, expected *Annotation) error {
 
 	fd, err := os.Open(fileName)
@@ -77,6 +80,9 @@ func CheckAnnotation(fileName string, expected *Annotation) error {
 	return nil
 }
 
+// Dissects the given file into string chunks as specified by the given
+// delimiter.  The resulting string chunks are then written to the given queue
+// where the receiving end parses them.
 func DissectFile(fileName string, delim Delimiter, queue chan QueueUnit) {
 
 	defer close(queue)
