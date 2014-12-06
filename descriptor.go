@@ -90,6 +90,11 @@ func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 
 		words := strings.Split(line, " ")
 
+		// Ignore lines starting with "opt".
+		if words[0] == "opt" {
+			words = words[1:]
+		}
+
 		switch words[0] {
 
 		case "router":
