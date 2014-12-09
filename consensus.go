@@ -166,7 +166,6 @@ func parseRouterFlags(flags []string) *RouterFlags {
 func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 
 	var status *RouterStatus = new(RouterStatus)
-	var port uint64
 
 	lines := strings.Split(rawStatus, "\n")
 
@@ -187,10 +186,8 @@ func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 			time, _ := time.Parse(publishedTimeLayout, strings.Join(words[4:6], " "))
 			status.Publication = time
 			status.Address = words[6]
-			port, _ = strconv.ParseUint(words[7], 10, 16)
-			status.ORPort = uint16(port)
-			port, _ = strconv.ParseUint(words[8], 10, 16)
-			status.DirPort = uint16(port)
+			status.ORPort = StringToPort(words[7])
+			status.DirPort = StringToPort(words[8])
 
 		case "s":
 			status.Flags = *parseRouterFlags(words[1:])

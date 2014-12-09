@@ -101,7 +101,6 @@ func (desc RouterDescriptor) String() string {
 func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 
 	var descriptor *RouterDescriptor = new(RouterDescriptor)
-	var port uint64
 
 	lines := strings.Split(rawDescriptor, "\n")
 
@@ -121,12 +120,9 @@ func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 		case "router":
 			descriptor.Nickname = words[1]
 			descriptor.Address = words[2]
-			port, _ = strconv.ParseUint(words[3], 10, 16)
-			descriptor.ORPort = uint16(port)
-			port, _ = strconv.ParseUint(words[4], 10, 16)
-			descriptor.SOCKSPort = uint16(port)
-			port, _ = strconv.ParseUint(words[5], 10, 16)
-			descriptor.DirPort = uint16(port)
+			descriptor.ORPort = StringToPort(words[3])
+			descriptor.SOCKSPort = StringToPort(words[4])
+			descriptor.DirPort = StringToPort(words[5])
 
 		case "platform":
 			descriptor.OperatingSystem = words[4]

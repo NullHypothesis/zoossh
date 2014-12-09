@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -107,4 +108,17 @@ func DissectFile(fileName string, delim Delimiter, queue chan QueueUnit) {
 		// Point to the beginning of the next string blurb.
 		rawContent = rawContent[position:]
 	}
+}
+
+// Convert the given port string to an unsigned 16-bit integer.  If the
+// conversion fails or the number cannot be represented in 16 bits, 0 is
+// returned.
+func StringToPort(portStr string) uint16 {
+
+	portNum, err := strconv.ParseUint(portStr, 10, 16)
+	if err != nil {
+		return uint16(0)
+	}
+
+	return uint16(portNum)
 }
