@@ -5,6 +5,7 @@ package zoossh
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -59,6 +60,68 @@ type RouterStatus struct {
 	// The single fields of a "p" line.
 	Accept   bool
 	PortList string
+}
+
+// Implement the Stringer interface for pretty printing.
+func (flags RouterFlags) String() string {
+
+	var stringFlags []string
+
+	if flags.Authority {
+		stringFlags = append(stringFlags, "Authority")
+	}
+	if flags.BadExit {
+		stringFlags = append(stringFlags, "BadExit")
+	}
+	if flags.Exit {
+		stringFlags = append(stringFlags, "Exit")
+	}
+	if flags.Fast {
+		stringFlags = append(stringFlags, "Fast")
+	}
+	if flags.Guard {
+		stringFlags = append(stringFlags, "Guard")
+	}
+	if flags.HSDir {
+		stringFlags = append(stringFlags, "HSDir")
+	}
+	if flags.Named {
+		stringFlags = append(stringFlags, "Named")
+	}
+	if flags.Stable {
+		stringFlags = append(stringFlags, "Stable")
+	}
+	if flags.Running {
+		stringFlags = append(stringFlags, "Running")
+	}
+	if flags.Unnamed {
+		stringFlags = append(stringFlags, "Unnamed")
+	}
+	if flags.Valid {
+		stringFlags = append(stringFlags, "Valid")
+	}
+	if flags.V2Dir {
+		stringFlags = append(stringFlags, "V2Dir")
+	}
+
+	return fmt.Sprintf(strings.Join(stringFlags, ", "))
+}
+
+// Implement the Stringer interface for pretty printing.
+func (status RouterStatus) String() string {
+
+	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
+		"Flags: %s\nDir port: %d\nPublished: %s\nVersion: %s\n"
+
+	return fmt.Sprintf(fmtString,
+		status.Nickname,
+		status.Address,
+		status.ORPort,
+		strings.ToUpper(status.Fingerprint),
+		status.Flags,
+		status.DirPort,
+		status.Publication,
+		status.TorVersion)
 }
 
 func parseRouterFlags(flags []string) *RouterFlags {

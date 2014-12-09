@@ -3,6 +3,7 @@
 package zoossh
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -72,6 +73,26 @@ type RouterDescriptor struct {
 
 	Accept []*ExitPattern
 	Reject []*ExitPattern
+}
+
+// Implement the Stringer interface for pretty printing.
+func (desc RouterDescriptor) String() string {
+
+	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
+		"Dir port: %d\nPublished: %s\nUptime: %d\nContact: %s\nOperating " +
+		"system: %s\nVersion: %s\n"
+
+	return fmt.Sprintf(fmtString,
+		desc.Nickname,
+		desc.Address,
+		desc.ORPort,
+		desc.Fingerprint,
+		desc.DirPort,
+		desc.Published,
+		desc.Uptime,
+		desc.Contact,
+		desc.OperatingSystem,
+		desc.TorVersion)
 }
 
 // Parses a raw router descriptor (in string format) and returns the descriptor
