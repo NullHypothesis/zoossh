@@ -3,8 +3,20 @@
 package zoossh
 
 import (
+	"os"
 	"testing"
 )
+
+// Benchmark the time it takes to parse a server descriptor file.
+func BenchmarkDescriptorParsing(b *testing.B) {
+
+	// Only run this benchmark if the descriptors file is there.
+	if _, err := os.Stat(serverDescriptorFile); err == nil {
+		for i := 0; i < b.N; i++ {
+			ParseDescriptorFile(serverDescriptorFile)
+		}
+	}
+}
 
 // Test the function ParseRawDescriptor().
 func TestDescriptorParsing(t *testing.T) {
