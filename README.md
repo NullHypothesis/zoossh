@@ -29,8 +29,8 @@ statuses:
 
 Alternatives
 ------------
-Check out the Python library [Stem](https://stem.torproject.org) or the Java
-library [metrics-lib](https://gitweb.torproject.org/metrics-lib.git).
+Check out the Python library [`Stem`](https://stem.torproject.org) or the Java
+library [`metrics-lib`](https://gitweb.torproject.org/metrics-lib.git).
 
 Contact
 -------
