@@ -4,6 +4,8 @@ package zoossh
 
 import (
 	"bufio"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -30,6 +32,24 @@ type Annotation struct {
 func (a *Annotation) String() string {
 
 	return fmt.Sprintf("@type %s %s.%s", a.Type, a.Major, a.Minor)
+}
+
+// Decodes the given Base64-encoded string and returns the resulting string.
+// If there are errors during decoding, an error string is returned.
+func Base64ToString(encoded string) (string, error) {
+
+	// dir-spec.txt says that Base64 padding is removed so we have to account
+	// for that here.
+	if rem := len(encoded) % 4; rem != 0 {
+		encoded += strings.Repeat("=", 4-rem)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(decoded), nil
 }
 
 // Checks the type annotation in the given file.  The Annotation struct

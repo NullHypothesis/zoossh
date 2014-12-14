@@ -3,8 +3,6 @@
 package zoossh
 
 import (
-	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -166,6 +164,7 @@ func parseRouterFlags(flags []string) *RouterFlags {
 func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 
 	var status *RouterStatus = new(RouterStatus)
+	var err error
 
 	lines := strings.Split(rawStatus, "\n")
 
@@ -179,10 +178,16 @@ func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 
 		case "r":
 			status.Nickname = words[1]
-			fpr, _ := base64.StdEncoding.DecodeString(words[2])
-			status.Fingerprint = hex.EncodeToString(fpr)
-			fpr, _ = base64.StdEncoding.DecodeString(words[3])
-			status.Digest = hex.EncodeToString(fpr)
+			status.Fingerprint, err = Base64ToString(words[2])
+			if err != nil {
+				return nil, err
+			}
+
+			status.Digest, err = Base64ToString(words[3])
+			if err != nil {
+				return nil, err
+			}
+
 			time, _ := time.Parse(publishedTimeLayout, strings.Join(words[4:6], " "))
 			status.Publication = time
 			status.Address = words[6]
