@@ -21,6 +21,7 @@ type QueueUnit struct {
 type Delimiter struct {
 	Pattern string
 	Offset  uint
+	Skip    uint
 }
 
 type Annotation struct {
@@ -123,7 +124,11 @@ func DissectFile(fileName string, delim Delimiter, queue chan QueueUnit) {
 		}
 		position += int(delim.Offset)
 
-		queue <- QueueUnit{rawContent[:position], nil}
+		if delim.Skip > 0 {
+			delim.Skip -= 1
+		} else {
+			queue <- QueueUnit{rawContent[:position], nil}
+		}
 
 		// Point to the beginning of the next string blurb.
 		rawContent = rawContent[position:]
