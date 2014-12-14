@@ -14,6 +14,29 @@ const (
 	consensusFile        = "/tmp/consensus"
 )
 
+// Test the function Base64ToString().
+func TestBase64ToString(t *testing.T) {
+
+	// Use a typical Base64-encoded 20-byte fingerprint.
+	dec, err := Base64ToString("OVSyFvUCAKNSYpz8ZPArMLqf0Ds=")
+	if err != nil {
+		t.Error("Failed to decode Base64.")
+	}
+
+	if dec != "3954b216f50200a352629cfc64f02b30ba9fd03b" {
+		t.Error("Base64 chunk decoded incorrectly.")
+	}
+
+	dec, err = Base64ToString("OVSyFvUCAKNSYpz8ZPArMLqf0Ds")
+	if err != nil {
+		t.Error("Failed to decode Base64 (with missing padding).")
+	}
+
+	if dec != "3954b216f50200a352629cfc64f02b30ba9fd03b" {
+		t.Error("Base64 chunk decoded incorrectly.")
+	}
+}
+
 // Test the function StringToPort().
 func TestStringToPort(t *testing.T) {
 
