@@ -218,11 +218,12 @@ func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 	return status, nil
 }
 
-// Parses the given file and returns a slice of RouterStatus structs is parsing
-// was successful.  If there were any errors, an error string is returned.
-func ParseConsensusFile(fileName string) ([]RouterStatus, error) {
+// Parses the given file and returns a map from relay fingerprints to
+// RouterStatus pointers if parsing was successful.  If there were any errors,
+// an error string is returned.
+func ParseConsensusFile(fileName string) (map[string]*RouterStatus, error) {
 
-	var statuses []RouterStatus
+	var statuses = make(map[string]*RouterStatus)
 
 	// Check if the file's annotation is as expected.
 	expected := &Annotation{
@@ -252,7 +253,7 @@ func ParseConsensusFile(fileName string) ([]RouterStatus, error) {
 			return nil, err
 		}
 
-		statuses = append(statuses, *status)
+		statuses[strings.ToUpper(status.Fingerprint)] = status
 	}
 
 	return statuses, nil

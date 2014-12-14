@@ -160,12 +160,12 @@ func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 	return descriptor, nil
 }
 
-// Parses the given file and returns a slice of RouterDescriptor structs if
-// parsing was successful.  If there were any errors, an error string is
-// returned.
-func ParseDescriptorFile(fileName string) ([]RouterDescriptor, error) {
+// Parses the given file and returns a map from relay fingerprints to
+// RouterDescriptor pointers if parsing was successful.  If there were any
+// errors, an error string is returned.
+func ParseDescriptorFile(fileName string) (map[string]*RouterDescriptor, error) {
 
-	var descriptors []RouterDescriptor
+	var descriptors = make(map[string]*RouterDescriptor)
 
 	// Check if the file's annotation is as expected.
 	expected := &Annotation{
@@ -195,7 +195,7 @@ func ParseDescriptorFile(fileName string) ([]RouterDescriptor, error) {
 			return nil, err
 		}
 
-		descriptors = append(descriptors, *descriptor)
+		descriptors[descriptor.Fingerprint] = descriptor
 	}
 
 	return descriptors, nil
