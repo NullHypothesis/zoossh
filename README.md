@@ -8,6 +8,9 @@ Though admittedly, the speed mostly comes from `zoossh` being implemented in a
 compiled language and not because the parsing code is particularly
 sophisticated.
 
+At this point, `zoossh` should not be used in practice because the APIs are not
+yet stable.
+
 Supported file formats
 ----------------------
 The following file formats are currently partially supported.  For more
