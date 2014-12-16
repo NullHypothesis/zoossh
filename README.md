@@ -30,6 +30,13 @@ statuses:
         fmt.Println(status)
     }
 
+Similarly, here's how you can parse a file containing server descriptors:
+
+    descs, _ := zoossh.ParseDescriptorFile(fileName)
+    for _, desc := range descs {
+        fmt.Println(desc)
+    }
+
 Alternatives
 ------------
 Check out the Python library [`Stem`](https://stem.torproject.org) or the Java
