@@ -60,6 +60,76 @@ type RouterStatus struct {
 	PortList string
 }
 
+type Consensus struct {
+
+	// A map from relay fingerprint to relay status.
+	RouterStatuses map[string]*RouterStatus
+}
+
+// NewConsensus serves as a constructor and returns a pointer to a freshly
+// allocated and empty Consensus.
+func NewConsensus() *Consensus {
+
+	return &Consensus{RouterStatuses: make(map[string]*RouterStatus)}
+}
+
+// Get returns the router status for the given fingerprint and a boolean value
+// indicating if the value could be found in the consensus.
+func (c *Consensus) Get(fingerprint string) (*RouterStatus, bool) {
+
+	status, exists := c.RouterStatuses[strings.ToUpper(fingerprint)]
+
+	return status, exists
+}
+
+// Set adds a new router status with the given fingerprint to the consensus.
+func (c *Consensus) Set(fingerprint string, status *RouterStatus) {
+
+	c.RouterStatuses[strings.ToUpper(fingerprint)] = status
+}
+
+// Length returns the length of the consensus.
+func (c *Consensus) Length() int {
+
+	return len(c.RouterStatuses)
+}
+
+// Subtract removes all routers which are part of the given consensus b from
+// consensus a.  It returns a new consensus which is the result of the
+// subtraction.
+func (a *Consensus) Subtract(b *Consensus) *Consensus {
+
+	var remainder = NewConsensus()
+
+	for fingerprint, status := range a.RouterStatuses {
+
+		_, exists := b.Get(fingerprint)
+		if !exists {
+			remainder.Set(fingerprint, status)
+		}
+	}
+
+	return remainder
+}
+
+// Intersect determines the intersection between the given consensus b and
+// consensus a.  It returns a new consensus which is the intersection of both
+// given consensuses.
+func (a *Consensus) Intersect(b *Consensus) *Consensus {
+
+	var intersection = NewConsensus()
+
+	for fingerprint, status := range a.RouterStatuses {
+
+		_, exists := b.Get(fingerprint)
+		if exists {
+			intersection.Set(fingerprint, status)
+		}
+	}
+
+	return intersection
+}
+
 // Implement the Stringer interface for pretty printing.
 func (flags RouterFlags) String() string {
 
@@ -218,12 +288,12 @@ func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 	return status, nil
 }
 
-// Parses the given file and returns a map from relay fingerprints to
-// RouterStatus pointers if parsing was successful.  If there were any errors,
-// an error string is returned.
-func ParseConsensusFile(fileName string) (map[string]*RouterStatus, error) {
+// ParseConsensusFile parses the given file and returns a network consensus if
+// parsing was successful.  If there were any errors, an error string is
+// returned.
+func ParseConsensusFile(fileName string) (*Consensus, error) {
 
-	var statuses = make(map[string]*RouterStatus)
+	var consensus = NewConsensus()
 
 	// Check if the file's annotation is as expected.
 	expected := &Annotation{
@@ -253,8 +323,8 @@ func ParseConsensusFile(fileName string) (map[string]*RouterStatus, error) {
 			return nil, err
 		}
 
-		statuses[strings.ToUpper(status.Fingerprint)] = status
+		consensus.Set(status.Fingerprint, status)
 	}
 
-	return statuses, nil
+	return consensus, nil
 }

@@ -25,8 +25,8 @@ Examples
 Here's how you can parse a network status document and iterate over all relay
 statuses:
 
-    statuses, _ := zoossh.ParseConsensusFile(fileName)
-    for _, status := range statuses {
+    consensus, _ := zoossh.ParseConsensusFile(fileName)
+    for _, status := range (*consensus).RouterStatuses {
         fmt.Println(status)
     }
 
