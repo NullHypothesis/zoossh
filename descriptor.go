@@ -94,6 +94,9 @@ func NewRouterDescriptors() *RouterDescriptors {
 func (d *RouterDescriptors) Get(fingerprint string) (*RouterDescriptor, bool) {
 
 	getDescriptor, exists := d.RouterDescriptors[strings.ToUpper(fingerprint)]
+	if !exists {
+		return nil, exists
+	}
 
 	return getDescriptor(), exists
 }

@@ -79,6 +79,9 @@ func NewConsensus() *Consensus {
 func (c *Consensus) Get(fingerprint string) (*RouterStatus, bool) {
 
 	getStatus, exists := c.RouterStatuses[strings.ToUpper(fingerprint)]
+	if !exists {
+		return nil, exists
+	}
 
 	return getStatus(), exists
 }
