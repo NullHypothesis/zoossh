@@ -75,6 +75,38 @@ type RouterDescriptor struct {
 	Reject []*ExitPattern
 }
 
+type RouterDescriptors struct {
+
+	// A map from relay fingerprint to a function which returns the router
+	// descriptor.
+	RouterDescriptors map[string]func() *RouterDescriptor
+}
+
+// NewRouterDescriptors serves as a constructor and returns a pointer to a
+// freshly allocated and empty RouterDescriptors struct.
+func NewRouterDescriptors() *RouterDescriptors {
+
+	return &RouterDescriptors{RouterDescriptors: make(map[string]func() *RouterDescriptor)}
+}
+
+// Get returns the router descriptor for the given fingerprint and a boolean
+// value indicating if the descriptor could be found.
+func (d *RouterDescriptors) Get(fingerprint string) (*RouterDescriptor, bool) {
+
+	getDescriptor, exists := d.RouterDescriptors[strings.ToUpper(fingerprint)]
+
+	return getDescriptor(), exists
+}
+
+// Set adds a new fingerprint mapping to a function returning the router
+// descriptor.
+func (d *RouterDescriptors) Set(fingerprint string, descriptor *RouterDescriptor) {
+
+	d.RouterDescriptors[strings.ToUpper(fingerprint)] = func() *RouterDescriptor {
+		return descriptor
+	}
+}
+
 // Implement the Stringer interface for pretty printing.
 func (desc RouterDescriptor) String() string {
 
@@ -95,10 +127,42 @@ func (desc RouterDescriptor) String() string {
 		desc.TorVersion)
 }
 
-// Parses a raw router descriptor (in string format) and returns the descriptor
-// as a RouterDescriptor struct.  If there are any errors during parsing, an
-// error string is returned.
-func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
+// LazyParseRawDescriptor lazily parses a raw router descriptor (in string
+// format) and returns the descriptor's fingerprint, a function returning the
+// descriptor, and an error if the descriptor could not be parsed.  Parsing is
+// delayed until the router descriptor is accessed.
+func LazyParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor, error) {
+
+	var fingerprint string
+
+	// Delay parsing of the router descriptor until this function is executed.
+	getDescriptor := func() *RouterDescriptor {
+		_, f, _ := ParseRawDescriptor(rawDescriptor)
+		return f()
+	}
+
+	// Only pull out the fingerprint.
+	lines := strings.Split(rawDescriptor, "\n")
+	for _, line := range lines {
+		words := strings.Split(line, " ")
+		if words[0] == "opt" {
+			words = words[1:]
+		}
+
+		if words[0] == "fingerprint" {
+			fingerprint = strings.Join(words[1:], "")
+			return fingerprint, getDescriptor, nil
+		}
+	}
+
+	return "", nil, fmt.Errorf("Could not extract descriptor fingerprint.")
+}
+
+// ParseRawDescriptor parses a raw router descriptor (in string format) and
+// returns the descriptor's fingerprint, a function returning the descriptor,
+// and an error if the descriptor could not be parsed.  In contrast to
+// LazyParseRawDescriptor, parsing is *not* delayed.
+func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor, error) {
 
 	var descriptor *RouterDescriptor = new(RouterDescriptor)
 
@@ -157,15 +221,23 @@ func ParseRawDescriptor(rawDescriptor string) (*RouterDescriptor, error) {
 		}
 	}
 
-	return descriptor, nil
+	return descriptor.Fingerprint, func() *RouterDescriptor { return descriptor }, nil
 }
 
-// Parses the given file and returns a map from relay fingerprints to
-// RouterDescriptor pointers if parsing was successful.  If there were any
-// errors, an error string is returned.
-func ParseDescriptorFile(fileName string) (map[string]*RouterDescriptor, error) {
+// parseDescriptorFile parses the given file and returns a pointer to
+// RouterDescriptors containing the router descriptors.  If there were any
+// errors, an error string is returned.  If the lazy argument is set to true,
+// parsing of the router descriptors is delayed until they are accessed.
+func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error) {
 
-	var descriptors = make(map[string]*RouterDescriptor)
+	var descriptors = NewRouterDescriptors()
+	var descriptorParser func(descriptor string) (string, func() *RouterDescriptor, error)
+
+	if lazy {
+		descriptorParser = LazyParseRawDescriptor
+	} else {
+		descriptorParser = ParseRawDescriptor
+	}
 
 	// Check if the file's annotation is as expected.
 	expected := &Annotation{
@@ -190,13 +262,33 @@ func ParseDescriptorFile(fileName string) (map[string]*RouterDescriptor, error) 
 			return nil, unit.Err
 		}
 
-		descriptor, err := ParseRawDescriptor(unit.Blurb)
+		fingerprint, getDescriptor, err := descriptorParser(unit.Blurb)
 		if err != nil {
 			return nil, err
 		}
 
-		descriptors[descriptor.Fingerprint] = descriptor
+		descriptors.RouterDescriptors[strings.ToUpper(fingerprint)] = getDescriptor
 	}
 
 	return descriptors, nil
+}
+
+// LazilyParseDescriptorFile parses the given file and returns a pointer to
+// RouterDescriptors containing the router descriptors.  If there were any
+// errors, an error string is returned.  Note that parsing is done lazily which
+// means that it is delayed until a given router descriptor is accessed.  That
+// pays off when you know that you will not parse most router descriptors.
+func LazilyParseDescriptorFile(fileName string) (*RouterDescriptors, error) {
+
+	return parseDescriptorFile(fileName, true)
+}
+
+// ParseDescriptorFile parses the given file and returns a pointer to
+// RouterDescriptors containing the router descriptors.  If there were any
+// errors, an error string is returned.  Note that in contrast to
+// LazilyParseDescriptorFile, parsing is *not* delayed.  That pays off when you
+// know that you will parse most router descriptors.
+func ParseDescriptorFile(fileName string) (*RouterDescriptors, error) {
+
+	return parseDescriptorFile(fileName, false)
 }

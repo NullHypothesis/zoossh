@@ -62,30 +62,34 @@ type RouterStatus struct {
 
 type Consensus struct {
 
-	// A map from relay fingerprint to relay status.
-	RouterStatuses map[string]*RouterStatus
+	// A map from relay fingerprint to a function which returns the relay
+	// status.
+	RouterStatuses map[string]func() *RouterStatus
 }
 
 // NewConsensus serves as a constructor and returns a pointer to a freshly
 // allocated and empty Consensus.
 func NewConsensus() *Consensus {
 
-	return &Consensus{RouterStatuses: make(map[string]*RouterStatus)}
+	return &Consensus{RouterStatuses: make(map[string]func() *RouterStatus)}
 }
 
 // Get returns the router status for the given fingerprint and a boolean value
-// indicating if the value could be found in the consensus.
+// indicating if the status could be found in the consensus.
 func (c *Consensus) Get(fingerprint string) (*RouterStatus, bool) {
 
-	status, exists := c.RouterStatuses[strings.ToUpper(fingerprint)]
+	getStatus, exists := c.RouterStatuses[strings.ToUpper(fingerprint)]
 
-	return status, exists
+	return getStatus(), exists
 }
 
-// Set adds a new router status with the given fingerprint to the consensus.
+// Set adds a new fingerprint mapping to a function returning the router status
+// to the consensus.
 func (c *Consensus) Set(fingerprint string, status *RouterStatus) {
 
-	c.RouterStatuses[strings.ToUpper(fingerprint)] = status
+	c.RouterStatuses[strings.ToUpper(fingerprint)] = func() *RouterStatus {
+		return status
+	}
 }
 
 // Length returns the length of the consensus.
@@ -101,11 +105,11 @@ func (a *Consensus) Subtract(b *Consensus) *Consensus {
 
 	var remainder = NewConsensus()
 
-	for fingerprint, status := range a.RouterStatuses {
+	for fingerprint, getStatus := range a.RouterStatuses {
 
-		_, exists := b.Get(fingerprint)
+		_, exists := b.RouterStatuses[fingerprint]
 		if !exists {
-			remainder.Set(fingerprint, status)
+			remainder.RouterStatuses[fingerprint] = getStatus
 		}
 	}
 
@@ -119,11 +123,11 @@ func (a *Consensus) Intersect(b *Consensus) *Consensus {
 
 	var intersection = NewConsensus()
 
-	for fingerprint, status := range a.RouterStatuses {
+	for fingerprint, getStatus := range a.RouterStatuses {
 
-		_, exists := b.Get(fingerprint)
+		_, exists := b.RouterStatuses[fingerprint]
 		if exists {
-			intersection.Set(fingerprint, status)
+			intersection.RouterStatuses[fingerprint] = getStatus
 		}
 	}
 
@@ -228,10 +232,36 @@ func parseRouterFlags(flags []string) *RouterFlags {
 	return routerFlags
 }
 
-// Parses a raw router status (in string format) and returns the status as a
-// RouterStatus struct.  If there were any errors during parsing, an error
-// string is returned.
-func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
+// LazyParseRawStatus parses a raw router status (in string format) and returns
+// the router's fingerprint, a function which returns a RouterStatus, and an
+// error if there were any during parsing.  Parsing of the given string is
+// delayed until the returned function is executed.
+func LazyParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
+
+	// Delay parsing of the router status until this function is executed.
+	getStatus := func() *RouterStatus {
+		_, f, _ := ParseRawStatus(rawStatus)
+		return f()
+	}
+
+	lines := strings.Split(rawStatus, "\n")
+
+	// Only pull out the fingerprint.
+	for _, line := range lines {
+		words := strings.Split(line, " ")
+		if words[0] == "r" {
+			fingerprint, err := Base64ToString(words[2])
+			return fingerprint, getStatus, err
+		}
+	}
+
+	return "", nil, fmt.Errorf("Could not extract relay fingerprint.")
+}
+
+// ParseRawStatus parses a raw router status (in string format) and returns the
+// router's fingerprint, a function which returns a RouterStatus, and an error
+// if there were any during parsing.
+func ParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
 
 	var status *RouterStatus = new(RouterStatus)
 	var err error
@@ -250,12 +280,12 @@ func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 			status.Nickname = words[1]
 			status.Fingerprint, err = Base64ToString(words[2])
 			if err != nil {
-				return nil, err
+				return "", nil, err
 			}
 
 			status.Digest, err = Base64ToString(words[3])
 			if err != nil {
-				return nil, err
+				return "", nil, err
 			}
 
 			time, _ := time.Parse(publishedTimeLayout, strings.Join(words[4:6], " "))
@@ -285,15 +315,23 @@ func ParseRawStatus(rawStatus string) (*RouterStatus, error) {
 		}
 	}
 
-	return status, nil
+	return status.Fingerprint, func() *RouterStatus { return status }, nil
 }
 
-// ParseConsensusFile parses the given file and returns a network consensus if
+// parseConsensusFile parses the given file and returns a network consensus if
 // parsing was successful.  If there were any errors, an error string is
-// returned.
-func ParseConsensusFile(fileName string) (*Consensus, error) {
+// returned.  If the lazy argument is set to true, parsing of the router
+// statuses is delayed until they are accessed.
+func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 
 	var consensus = NewConsensus()
+	var statusParser func(string) (string, func() *RouterStatus, error)
+
+	if lazy {
+		statusParser = LazyParseRawStatus
+	} else {
+		statusParser = ParseRawStatus
+	}
 
 	// Check if the file's annotation is as expected.
 	expected := &Annotation{
@@ -318,13 +356,33 @@ func ParseConsensusFile(fileName string) (*Consensus, error) {
 			return nil, unit.Err
 		}
 
-		status, err := ParseRawStatus(unit.Blurb)
+		fingerprint, getStatus, err := statusParser(unit.Blurb)
 		if err != nil {
 			return nil, err
 		}
 
-		consensus.Set(status.Fingerprint, status)
+		consensus.RouterStatuses[strings.ToUpper(fingerprint)] = getStatus
 	}
 
 	return consensus, nil
+}
+
+// LazilyParseConsensusFile parses the given file and returns a network
+// consensus if parsing was successful.  If there were any errors, an error
+// string is returned.  Parsing of the router statuses is delayed until they
+// are accessed using the Get method.  As a result, this function is
+// recommended as long as you won't access more than ~50% of all statuses.
+func LazilyParseConsensusFile(fileName string) (*Consensus, error) {
+
+	return parseConsensusFile(fileName, true)
+}
+
+// ParseConsensusFile parses the given file and returns a network consensus if
+// parsing was successful.  If there were any errors, an error string is
+// returned.  In contrast to LazilyParseConsensusFile, parsing of router
+// statuses is *not* delayed.  As a result, this function is recommended as
+// long as you will access most of all statuses.
+func ParseConsensusFile(fileName string) (*Consensus, error) {
+
+	return parseConsensusFile(fileName, false)
 }
