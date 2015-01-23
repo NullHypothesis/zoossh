@@ -1,0 +1,157 @@
+// Tests functions from "consensus.go".
+
+package zoossh
+
+import (
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+)
+
+// Benchmark the time it takes to parse a consensus file.
+func BenchmarkConsensusParsing(b *testing.B) {
+
+	// Only run this benchmark if the descriptors file is there.
+	if _, err := os.Stat(consensusFile); err == nil {
+		for i := 0; i < b.N; i++ {
+			ParseConsensusFile(consensusFile)
+		}
+	}
+}
+
+// Benchmark the time it takes to lazily parse a consensus file.
+func BenchmarkLConsensusParsing(b *testing.B) {
+
+	// Only run this benchmark if the descriptors file is there.
+	if _, err := os.Stat(consensusFile); err == nil {
+		for i := 0; i < b.N; i++ {
+			LazilyParseConsensusFile(consensusFile)
+		}
+	}
+}
+
+// Benchmark the time it takes to parse a consensus file and get all its router
+// statuses.
+func BenchmarkConsensusParsingAndGetting(b *testing.B) {
+
+	// Only run this benchmark if the descriptors file is there.
+	if _, err := os.Stat(consensusFile); err == nil {
+		for i := 0; i < b.N; i++ {
+			consensus, _ := ParseConsensusFile(consensusFile)
+			for fingerprint, _ := range consensus.RouterStatuses {
+				consensus.Get(fingerprint)
+			}
+		}
+	}
+}
+
+// Benchmark the time it takes to lazily parse a consensus file and get all its
+// router statuses.
+func BenchmarkLConsensusParsingAndGetting(b *testing.B) {
+
+	// Only run this benchmark if the descriptors file is there.
+	if _, err := os.Stat(consensusFile); err == nil {
+		for i := 0; i < b.N; i++ {
+			consensus, _ := LazilyParseConsensusFile(consensusFile)
+			for fingerprint, _ := range consensus.RouterStatuses {
+				consensus.Get(fingerprint)
+			}
+		}
+	}
+}
+
+func TestConsensusOperations(t *testing.T) {
+
+	validFingerprint1 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	validFingerprint2 := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+	invalidFingerprint := "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+
+	// Get a fresh consensus.
+	consensus := NewConsensus()
+	if consensus.Length() != 0 {
+		t.Error("Consensus should be of size zero.")
+	}
+
+	// Fingerprints should always be stored in upper case format.
+	consensus.Set(validFingerprint1, &RouterStatus{})
+	consensus.Set(validFingerprint2, &RouterStatus{})
+	if consensus.Length() != 1 {
+		t.Error("Consensus should be of size one.")
+	}
+
+	status, exists := consensus.Get(validFingerprint2)
+	if !exists {
+		t.Error("Could not retrieve fingerprint which should be available.")
+	}
+
+	if status.ORPort != 0 {
+		t.Error("Field ORPort should be 0.")
+	}
+
+	status, exists = consensus.Get(invalidFingerprint)
+	if exists || (status != nil) {
+		t.Error("Retrieved fingerprint which should not exist.")
+	}
+}
+
+func TestStatusParsing(t *testing.T) {
+
+	_, _, err := ParseRawStatus("invalid router status")
+	if err != nil {
+		t.Error("Invalid router status did not raise an error.")
+	}
+}
+
+func TestConsensusSetOperations(t *testing.T) {
+
+	fingerprint0, getStatus0, err := ParseRawStatus(`r Karlstad0 m5TNC3uAV+ryG6fwI7ehyMqc5kU f1g9KQhgS0r6+H/7dzAJOpi6lG8 2014-12-08 06:57:54 193.11.166.194 9000 80
+s Fast Guard HSDir Running Stable V2Dir Valid
+v Tor 0.2.4.23
+w Bandwidth=2670
+p reject 1-65535`)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fingerprint1, getStatus1, err := ParseRawStatus(`r Karlstad1 zO8CqkVMCrD+GsaDBPbYxCIMGRI pR21zIq4gZQmZOj2FvRwNO5U+K0 2014-12-08 06:57:49 193.11.166.194 9001 0
+s Fast Guard Running Stable Valid
+v Tor 0.2.4.23
+w Bandwidth=2290
+p reject 1-65535`)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fingerprint2, getStatus2, err := ParseRawStatus(`r Karlstad2 e9hMtjhF4NYcHPqDkUobjJaEgrE eu8/9NajsgwD6+/vlObfyk2bZjo 2014-12-08 12:24:43 81.170.149.212 9001 0
+s Fast Running Stable Valid
+v Tor 0.2.3.25
+w Bandwidth=778
+p reject 1-65535`)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(fingerprint1)
+	if strings.ToUpper(fingerprint1) != "CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912" {
+		t.Error("Unexpected fingerprint for router status.")
+	}
+
+	if getStatus1().ORPort != 9001 {
+		t.Error("Unexpected ORPort.")
+	}
+
+	consensus0 := NewConsensus()
+	consensus0.Set(fingerprint0, getStatus0())
+	consensus1 := NewConsensus()
+	consensus1.Set(fingerprint0, getStatus0())
+	consensus1.Set(fingerprint1, getStatus1())
+	consensus1.Set(fingerprint2, getStatus2())
+	consensus2 := NewConsensus()
+	consensus2.Set(fingerprint2, getStatus2())
+
+	intersect := consensus0.Intersect(consensus1)
+	if intersect.Length() != 1 {
+		t.Error("Bad consensus intersection.")
+	}
+}
