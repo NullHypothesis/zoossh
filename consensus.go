@@ -4,6 +4,7 @@ package zoossh
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -40,7 +41,7 @@ type RouterStatus struct {
 	Fingerprint string
 	Digest      string
 	Publication time.Time
-	Address     string
+	Address     net.IP
 	ORPort      uint16
 	DirPort     uint16
 
@@ -293,7 +294,7 @@ func ParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
 
 			time, _ := time.Parse(publishedTimeLayout, strings.Join(words[4:6], " "))
 			status.Publication = time
-			status.Address = words[6]
+			status.Address = net.ParseIP(words[6])
 			status.ORPort = StringToPort(words[7])
 			status.DirPort = StringToPort(words[8])
 

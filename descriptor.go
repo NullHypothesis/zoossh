@@ -4,6 +4,7 @@ package zoossh
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -31,7 +32,7 @@ type RouterDescriptor struct {
 
 	// The single fields of a "router" line.
 	Nickname  string
-	Address   string
+	Address   net.IP
 	ORPort    uint16
 	SOCKSPort uint16
 	DirPort   uint16
@@ -186,7 +187,7 @@ func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor,
 
 		case "router":
 			descriptor.Nickname = words[1]
-			descriptor.Address = words[2]
+			descriptor.Address = net.ParseIP(words[2])
 			descriptor.ORPort = StringToPort(words[3])
 			descriptor.SOCKSPort = StringToPort(words[4])
 			descriptor.DirPort = StringToPort(words[5])
