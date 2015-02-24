@@ -59,6 +59,42 @@ func Base64ToString(encoded string) (string, error) {
 	return hex.EncodeToString(decoded), nil
 }
 
+// GetAnnotation obtains and returns the given file's annotation.  If anything
+// fails in the process, an error string is returned.
+func GetAnnotation(fileName string) (*Annotation, error) {
+
+	fd, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	// Fetch the file's first line which should be the annotation.
+
+	scanner := bufio.NewScanner(fd)
+	scanner.Scan()
+	annotationText := scanner.Text()
+
+	annotation := new(Annotation)
+
+	// We expect "@type TYPE VERSION".
+	words := strings.Split(annotationText, " ")
+	if len(words) != 3 {
+		return nil, fmt.Errorf("Could not parse file annotation for \"%s\".", fileName)
+	}
+	annotation.Type = words[1]
+
+	// We expect "MAJOR.MINOR".
+	version := strings.Split(words[2], ".")
+	if len(version) != 2 {
+		return nil, fmt.Errorf("Could not parse file annotation for \"%s\".", fileName)
+	}
+	annotation.Major = version[0]
+	annotation.Minor = version[1]
+
+	return annotation, nil
+}
+
 // Checks the type annotation in the given file.  The Annotation struct
 // determines what we want to see in the file.  If we don't see the expected
 // annotation, an error string is returned.

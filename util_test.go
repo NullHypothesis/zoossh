@@ -72,6 +72,43 @@ func TestEquals(t *testing.T) {
 	}
 }
 
+// Test the function GetAnnotation().
+func TestGetAnnotation(t *testing.T) {
+
+	expectedDescriptorAnnotation := &Annotation{"server-descriptor", "1", "0"}
+	expectedConsensusAnnotation := &Annotation{"network-status-consensus-3", "1", "0"}
+
+	// Parse our provided server descriptor file which should work.
+	if _, err := os.Stat(serverDescriptorFile); err == nil {
+		annotation, err := GetAnnotation(serverDescriptorFile)
+		if err != nil {
+			t.Errorf("GetAnnotation() failed to fetch annotation from \"%s\".", serverDescriptorFile)
+		}
+
+		if !annotation.Equals(expectedDescriptorAnnotation) {
+			t.Errorf("Extracted annotation not as expected in \"%s\".", serverDescriptorFile)
+		}
+	}
+
+	// Parse our provided consensus file which should work.
+	if _, err := os.Stat(consensusFile); err == nil {
+		annotation, err := GetAnnotation(consensusFile)
+		if err != nil {
+			t.Errorf("GetAnnotation() failed to fetch annotation from \"%s\".", consensusFile)
+		}
+
+		if !annotation.Equals(expectedConsensusAnnotation) {
+			t.Errorf("Extracted annotation not as expected in \"%s\".", consensusFile)
+		}
+	}
+
+	// Make sure that a bogus file raises an error.
+	_, err := GetAnnotation("/dev/zero")
+	if err == nil {
+		t.Error("GetAnnotation() failed to raise an error for /dev/zero.")
+	}
+}
+
 // Test the function CheckAnnotation().
 func TestCheckAnnotation(t *testing.T) {
 
