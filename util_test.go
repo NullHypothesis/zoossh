@@ -56,6 +56,22 @@ func TestStringToPort(t *testing.T) {
 	}
 }
 
+// Test the function Equals().
+func TestEquals(t *testing.T) {
+
+	a := Annotation{"a", "b", "c"}
+	b := Annotation{"a", "b", "c"}
+	z := Annotation{"x", "y", "z"}
+
+	if !a.Equals(&b) || !b.Equals(&a) {
+		t.Error("Equals() incorrectly classified annotations as unequal.")
+	}
+
+	if a.Equals(&z) || z.Equals(&a) || b.Equals(&z) || z.Equals(&b) {
+		t.Error("Equals() incorrectly classified annotations as equal.")
+	}
+}
+
 // Test the function CheckAnnotation().
 func TestCheckAnnotation(t *testing.T) {
 

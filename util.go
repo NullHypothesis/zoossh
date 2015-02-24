@@ -35,6 +35,12 @@ func (a *Annotation) String() string {
 	return fmt.Sprintf("@type %s %s.%s", a.Type, a.Major, a.Minor)
 }
 
+// Equals checks whether the two given annotations have the same content.
+func (a *Annotation) Equals(b *Annotation) bool {
+
+	return (*a).Type == (*b).Type && (*a).Major == (*b).Major && (*a).Minor == (*b).Minor
+}
+
 // Decodes the given Base64-encoded string and returns the resulting string.
 // If there are errors during decoding, an error string is returned.
 func Base64ToString(encoded string) (string, error) {
