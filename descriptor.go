@@ -5,6 +5,7 @@ package zoossh
 import (
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -243,13 +244,19 @@ func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error)
 		descriptorParser = ParseRawDescriptor
 	}
 
+	fd, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
 	// Check if the file's annotation is as expected.
 	expected := &Annotation{
 		supportedDescriptorType,
 		supportedDescriptorMajor,
 		supportedDescriptorMinor,
 	}
-	err := CheckAnnotation(fileName, expected)
+	err = CheckAnnotation(fd, expected)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +264,7 @@ func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error)
 	// We will read raw router descriptors from this channel.
 	queue := make(chan QueueUnit)
 
-	go DissectFile(fileName, Delimiter{descriptorDelimiter, uint(len(descriptorDelimiter)), 0}, queue)
+	go DissectFile(fd, Delimiter{descriptorDelimiter, uint(len(descriptorDelimiter)), 0}, queue)
 
 	// Parse incoming descriptors until the channel is closed by the remote
 	// end.

@@ -71,21 +71,31 @@ func TestCheckAnnotation(t *testing.T) {
 		supportedStatusMajor,
 		supportedStatusMinor}
 
-	err = CheckAnnotation("/foo/bar/foo/bar", goodSDAnnotation)
+	fd, err := os.Open("/dev/zero")
 	if err == nil {
-		// Seriously?
-		t.Error("CheckAnnotation() failed to reject crazy file.")
+		err = CheckAnnotation(fd, goodSDAnnotation)
+		if err == nil {
+			t.Error("CheckAnnotation() considers /dev/zero valid.")
+		}
 	}
+	defer fd.Close()
 
 	// Only run this test if the descriptors file is there.
 	if _, err = os.Stat(serverDescriptorFile); err == nil {
 
-		err = CheckAnnotation(serverDescriptorFile, goodSDAnnotation)
+		fd, err := os.Open(serverDescriptorFile)
+		if err != nil {
+			return
+		}
+		defer fd.Close()
+
+		err = CheckAnnotation(fd, goodSDAnnotation)
 		if err != nil {
 			t.Error("CheckAnnotation() failed to accept annotation: ", err)
 		}
+		fd.Seek(0, 0)
 
-		err = CheckAnnotation(serverDescriptorFile, goodCAnnotation)
+		err = CheckAnnotation(fd, goodCAnnotation)
 		if err == nil {
 			t.Error("CheckAnnotation() failed to reject annotation.")
 		}
@@ -94,12 +104,19 @@ func TestCheckAnnotation(t *testing.T) {
 	// Only run this test if the consensus file is there.
 	if _, err = os.Stat(consensusFile); err == nil {
 
-		err = CheckAnnotation(consensusFile, goodCAnnotation)
+		fd, err := os.Open(consensusFile)
+		if err != nil {
+			return
+		}
+		defer fd.Close()
+
+		err = CheckAnnotation(fd, goodCAnnotation)
 		if err != nil {
 			t.Error("CheckAnnotation() failed to accept annotation: ", err)
 		}
+		fd.Seek(0, 0)
 
-		err = CheckAnnotation(consensusFile, goodSDAnnotation)
+		err = CheckAnnotation(fd, goodSDAnnotation)
 		if err == nil {
 			t.Error("CheckAnnotation() failed to reject annotation.")
 		}

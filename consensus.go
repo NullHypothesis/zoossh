@@ -5,6 +5,7 @@ package zoossh
 import (
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -337,13 +338,19 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 		statusParser = ParseRawStatus
 	}
 
+	fd, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
 	// Check if the file's annotation is as expected.
 	expected := &Annotation{
 		supportedStatusType,
 		supportedStatusMajor,
 		supportedStatusMinor,
 	}
-	err := CheckAnnotation(fileName, expected)
+	err = CheckAnnotation(fd, expected)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +358,7 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 	// We will read raw router statuses from this channel.
 	queue := make(chan QueueUnit)
 
-	go DissectFile(fileName, Delimiter{"\nr ", 1, 1}, queue)
+	go DissectFile(fd, Delimiter{"\nr ", 1, 1}, queue)
 
 	// Parse incoming router statuses until the channel is closed by the remote
 	// end.

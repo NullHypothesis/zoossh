@@ -68,7 +68,7 @@ tWJ53g/ru8Hiy+h9Wa5gI+Eog/z4hj36GBiaTXJoG3M=
 -----END SIGNATURE-----
 `
 
-	_, err := ParseRawDescriptor(goodDescriptor)
+	_, _, err := ParseRawDescriptor(goodDescriptor)
 	if err != nil {
 		t.Error("Failed to parse server descriptor.")
 	}

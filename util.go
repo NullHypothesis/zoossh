@@ -56,13 +56,7 @@ func Base64ToString(encoded string) (string, error) {
 // Checks the type annotation in the given file.  The Annotation struct
 // determines what we want to see in the file.  If we don't see the expected
 // annotation, an error string is returned.
-func CheckAnnotation(fileName string, expected *Annotation) error {
-
-	fd, err := os.Open(fileName)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
+func CheckAnnotation(fd *os.File, expected *Annotation) error {
 
 	// The annotation is placed in the first line of the file.  See the
 	// following URL for details:
@@ -105,11 +99,11 @@ func CheckAnnotation(fileName string, expected *Annotation) error {
 // Dissects the given file into string chunks as specified by the given
 // delimiter.  The resulting string chunks are then written to the given queue
 // where the receiving end parses them.
-func DissectFile(fileName string, delim Delimiter, queue chan QueueUnit) {
+func DissectFile(fd *os.File, delim Delimiter, queue chan QueueUnit) {
 
 	defer close(queue)
 
-	blurb, err := ioutil.ReadFile(fileName)
+	blurb, err := ioutil.ReadAll(fd)
 	if err != nil {
 		queue <- QueueUnit{"", err}
 	}
