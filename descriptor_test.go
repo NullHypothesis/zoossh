@@ -73,20 +73,3 @@ tWJ53g/ru8Hiy+h9Wa5gI+Eog/z4hj36GBiaTXJoG3M=
 		t.Error("Failed to parse server descriptor.")
 	}
 }
-
-// Test the function ParsePlatform().
-func TestParsePlatform(t *testing.T) {
-
-	goodVersionString := "Tor 0.2.5.10 on Linux"
-	badVersionString := "foo bar foo"
-
-	ver, os := ParsePlatform(goodVersionString)
-	if (ver != "Tor 0.2.5.10") || (os != "Linux") {
-		t.Error("Couldn't parse version string \"%s\".", goodVersionString)
-	}
-
-	ver, os = ParsePlatform(badVersionString)
-	if (ver != "") || (os != "") {
-		t.Error("Couldn't parse version string \"%s\".", badVersionString)
-	}
-}
