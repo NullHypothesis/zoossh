@@ -85,6 +85,14 @@ type RouterDescriptors struct {
 	RouterDescriptors map[string]func() *RouterDescriptor
 }
 
+// PrintObjects implements the ObjectCollector interface.
+func (desc RouterDescriptors) PrintObjects() {
+
+	for _, getValue := range desc.RouterDescriptors {
+		fmt.Println(getValue())
+	}
+}
+
 // NewRouterDescriptors serves as a constructor and returns a pointer to a
 // freshly allocated and empty RouterDescriptors struct.
 func NewRouterDescriptors() *RouterDescriptors {

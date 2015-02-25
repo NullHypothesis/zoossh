@@ -70,6 +70,14 @@ type Consensus struct {
 	RouterStatuses map[string]func() *RouterStatus
 }
 
+// PrintObjects implements the ObjectCollector interface.
+func (c Consensus) PrintObjects() {
+
+	for _, getValue := range c.RouterStatuses {
+		fmt.Println(getValue())
+	}
+}
+
 // NewConsensus serves as a constructor and returns a pointer to a freshly
 // allocated and empty Consensus.
 func NewConsensus() *Consensus {
