@@ -14,11 +14,12 @@ import (
 const (
 	// The beginning of a new router status.
 	statusDelimiter string = "\nr "
-	// The file format we currently (try to) support.
-	supportedStatusType  string = "network-status-consensus-3"
-	supportedStatusMajor string = "1"
-	supportedStatusMinor string = "0"
 )
+
+var consensusAnnotations map[Annotation]bool = map[Annotation]bool{
+	// The file format we currently (try to) support.
+	Annotation{"network-status-consensus-3", "1", "0"}: true,
+}
 
 type RouterFlags struct {
 	Authority bool
@@ -344,13 +345,7 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 	}
 	defer fd.Close()
 
-	// Check if the file's annotation is as expected.
-	expected := &Annotation{
-		supportedStatusType,
-		supportedStatusMajor,
-		supportedStatusMinor,
-	}
-	err = CheckAnnotation(fd, expected)
+	err = CheckAnnotation(fd, consensusAnnotations)
 	if err != nil {
 		return nil, err
 	}

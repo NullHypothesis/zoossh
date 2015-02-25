@@ -16,11 +16,12 @@ const (
 	descriptorDelimiter string = "-----END SIGNATURE-----"
 	// The layout of the "published" field.
 	publishedTimeLayout string = "2006-01-02 15:04:05"
-	// The file format we currently (try to) support.
-	supportedDescriptorType  string = "server-descriptor"
-	supportedDescriptorMajor string = "1"
-	supportedDescriptorMinor string = "0"
 )
+
+var descriptorAnnotations map[Annotation]bool = map[Annotation]bool{
+	// The file format we currently (try to) support.
+	Annotation{"server-descriptor", "1", "0"}: true,
+}
 
 // An exitpattern as defined in dirspec.txt, Section 2.1.3.
 type ExitPattern struct {
@@ -250,13 +251,7 @@ func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error)
 	}
 	defer fd.Close()
 
-	// Check if the file's annotation is as expected.
-	expected := &Annotation{
-		supportedDescriptorType,
-		supportedDescriptorMajor,
-		supportedDescriptorMinor,
-	}
-	err = CheckAnnotation(fd, expected)
+	err = CheckAnnotation(fd, descriptorAnnotations)
 	if err != nil {
 		return nil, err
 	}

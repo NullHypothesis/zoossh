@@ -114,19 +114,9 @@ func TestCheckAnnotation(t *testing.T) {
 
 	var err error
 
-	goodSDAnnotation := &Annotation{
-		supportedDescriptorType,
-		supportedDescriptorMajor,
-		supportedDescriptorMinor}
-
-	goodCAnnotation := &Annotation{
-		supportedStatusType,
-		supportedStatusMajor,
-		supportedStatusMinor}
-
 	fd, err := os.Open("/dev/zero")
 	if err == nil {
-		err = CheckAnnotation(fd, goodSDAnnotation)
+		err = CheckAnnotation(fd, descriptorAnnotations)
 		if err == nil {
 			t.Error("CheckAnnotation() considers /dev/zero valid.")
 		}
@@ -142,13 +132,13 @@ func TestCheckAnnotation(t *testing.T) {
 		}
 		defer fd.Close()
 
-		err = CheckAnnotation(fd, goodSDAnnotation)
+		err = CheckAnnotation(fd, descriptorAnnotations)
 		if err != nil {
 			t.Error("CheckAnnotation() failed to accept annotation: ", err)
 		}
 		fd.Seek(0, 0)
 
-		err = CheckAnnotation(fd, goodCAnnotation)
+		err = CheckAnnotation(fd, consensusAnnotations)
 		if err == nil {
 			t.Error("CheckAnnotation() failed to reject annotation.")
 		}
@@ -163,13 +153,13 @@ func TestCheckAnnotation(t *testing.T) {
 		}
 		defer fd.Close()
 
-		err = CheckAnnotation(fd, goodCAnnotation)
+		err = CheckAnnotation(fd, consensusAnnotations)
 		if err != nil {
 			t.Error("CheckAnnotation() failed to accept annotation: ", err)
 		}
 		fd.Seek(0, 0)
 
-		err = CheckAnnotation(fd, goodSDAnnotation)
+		err = CheckAnnotation(fd, descriptorAnnotations)
 		if err == nil {
 			t.Error("CheckAnnotation() failed to reject annotation.")
 		}

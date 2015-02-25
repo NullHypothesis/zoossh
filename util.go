@@ -98,7 +98,7 @@ func GetAnnotation(fileName string) (*Annotation, error) {
 // Checks the type annotation in the given file.  The Annotation struct
 // determines what we want to see in the file.  If we don't see the expected
 // annotation, an error string is returned.
-func CheckAnnotation(fd *os.File, expected *Annotation) error {
+func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 
 	// The annotation is placed in the first line of the file.  See the
 	// following URL for details:
@@ -107,8 +107,7 @@ func CheckAnnotation(fd *os.File, expected *Annotation) error {
 	scanner.Scan()
 	annotation := scanner.Text()
 
-	invalidFormat := fmt.Errorf("Invalid format for file annotation.  "+
-		"Expected \"%s\" but got \"%s\".", expected, annotation)
+	invalidFormat := fmt.Errorf("Unexpected file annotation: %s", annotation)
 
 	// We expect "@type TYPE VERSION".
 	words := strings.Split(annotation, " ")
@@ -121,21 +120,16 @@ func CheckAnnotation(fd *os.File, expected *Annotation) error {
 	if len(version) != 2 {
 		return invalidFormat
 	}
+	observed := Annotation{words[1], version[0], version[1]}
 
-	// Check annotation type.
-	if (words[0] != "@type") || (words[1] != expected.Type) {
-		return fmt.Errorf("Invalid annotation type.  Expected \"@type %s\" "+
-			"but got \"%s %s\".", expected.Type, words[0], words[1])
+	for annotation, _ := range expected {
+		// We support the observed annotation.
+		if annotation.Equals(&observed) {
+			return nil
+		}
 	}
 
-	// Check major and minor version number.
-	if (version[0] != expected.Major) || (version[1] != expected.Minor) {
-		return fmt.Errorf("Invalid annotation version.  Expected \"%s.%s\" "+
-			"but got \"%s.%s\".", expected.Major, expected.Minor, version[0],
-			version[1])
-	}
-
-	return nil
+	return invalidFormat
 }
 
 // Dissects the given file into string chunks as specified by the given
