@@ -100,12 +100,21 @@ func GetAnnotation(fileName string) (*Annotation, error) {
 // annotation, an error string is returned.
 func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 
+	before, err := fd.Seek(0, os.SEEK_CUR)
+	if err != nil {
+		return err
+	}
+
 	// The annotation is placed in the first line of the file.  See the
 	// following URL for details:
 	// <https://collector.torproject.org/formats.html>
 	scanner := bufio.NewScanner(fd)
 	scanner.Scan()
 	annotation := scanner.Text()
+
+	// Set file descriptor back because NewScanner() reads and buffers large
+	// chunks of data.
+	fd.Seek(before + int64(len(annotation)), os.SEEK_SET)
 
 	invalidFormat := fmt.Errorf("Unexpected file annotation: %s", annotation)
 
