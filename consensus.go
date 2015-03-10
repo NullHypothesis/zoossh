@@ -11,11 +11,6 @@ import (
 	"time"
 )
 
-const (
-	// The beginning of a new router status.
-	statusDelimiter string = "\nr "
-)
-
 var consensusAnnotations map[Annotation]bool = map[Annotation]bool{
 	// The file format we currently (try to) support.
 	Annotation{"network-status-consensus-3", "1", "0"}: true,
@@ -332,6 +327,29 @@ func ParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
 	return status.Fingerprint, func() *RouterStatus { return status }, nil
 }
 
+// extractStatusEntry extracts the first network status entry from the given
+// string blurb.  If successful, it returns the status entry as a string and
+// true or false, depending on if it extracted the last entry in the string
+// blurb or not.
+func extractStatusEntry(blurb string) (string, bool, error) {
+
+	start := strings.Index(blurb, "\nr ")
+	if start == -1 {
+		return "", false, fmt.Errorf("Cannot find beginning of status entry: \"\\nr \"")
+	}
+
+	end := strings.Index(blurb[start+1:], "\nr ")
+	if end == -1 {
+		end := strings.Index(blurb[start+1:], "directory-signature")
+		if end == -1 {
+			return "", false, fmt.Errorf("Cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
+		}
+		return blurb[start : start+end], true, nil
+	}
+
+	return blurb[start : start+end], false, nil
+}
+
 // parseConsensusFile parses the given file and returns a network consensus if
 // parsing was successful.  If there were any errors, an error string is
 // returned.  If the lazy argument is set to true, parsing of the router
@@ -360,8 +378,7 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 
 	// We will read raw router statuses from this channel.
 	queue := make(chan QueueUnit)
-
-	go DissectFile(fd, Delimiter{"\nr ", 1, 1}, queue)
+	go DissectFile(fd, extractStatusEntry, queue)
 
 	// Parse incoming router statuses until the channel is closed by the remote
 	// end.

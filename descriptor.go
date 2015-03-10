@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	// The last line of a router descriptor.
-	descriptorDelimiter string = "-----END SIGNATURE-----"
 	// The layout of the "published" field.
 	publishedTimeLayout string = "2006-01-02 15:04:05"
 )
@@ -238,6 +236,32 @@ func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor,
 	return descriptor.Fingerprint, func() *RouterDescriptor { return descriptor }, nil
 }
 
+// extractDescriptor extracts the first server descriptor from the given string
+// blurb.  If successful, it returns the descriptor as a string and true or
+// false, depending on if it extracted the last descriptor in the string blurb
+// or not.
+func extractDescriptor(blurb string) (string, bool, error) {
+
+	start := strings.Index(blurb, "\nrouter ")
+	if start == -1 {
+		return "", false, fmt.Errorf("Cannot find beginning of descriptor: \"\\nrouter \"")
+	}
+
+	marker := "\n-----END SIGNATURE-----\n"
+	end := strings.Index(blurb[start:], marker)
+	if end == -1 {
+		return "", false, fmt.Errorf("Cannot find end of descriptor: \"\\n-----END SIGNATURE-----\\n\"")
+	}
+
+	// Are we at the end?
+	done := false
+	if len(blurb) == (start + end + len(marker)) {
+		done = true
+	}
+
+	return blurb[start : start+end+len(marker)], done, nil
+}
+
 // parseDescriptorFile parses the given file and returns a pointer to
 // RouterDescriptors containing the router descriptors.  If there were any
 // errors, an error string is returned.  If the lazy argument is set to true,
@@ -266,8 +290,7 @@ func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error)
 
 	// We will read raw router descriptors from this channel.
 	queue := make(chan QueueUnit)
-
-	go DissectFile(fd, Delimiter{descriptorDelimiter, uint(len(descriptorDelimiter)), 0}, queue)
+	go DissectFile(fd, extractDescriptor, queue)
 
 	// Parse incoming descriptors until the channel is closed by the remote
 	// end.

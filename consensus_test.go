@@ -3,7 +3,6 @@
 package zoossh
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -132,7 +131,6 @@ p reject 1-65535`)
 		t.Error(err)
 	}
 
-	fmt.Println(fingerprint1)
 	if strings.ToUpper(fingerprint1) != "CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912" {
 		t.Error("Unexpected fingerprint for router status.")
 	}
@@ -153,5 +151,36 @@ p reject 1-65535`)
 	intersect := consensus0.Intersect(consensus1)
 	if intersect.Length() != 1 {
 		t.Error("Bad consensus intersection.")
+	}
+}
+
+func TestExtractStatusEntry(t *testing.T) {
+
+	goodStatusEntry := `
+r seele AAoQ1DAR6kkoo19hBAX5K0QztNw bdrzhG0Kk/8DUsnSdmzj7DjFQjY 2014-12-08 12:27:05 73.15.150.172 9001 0
+s Fast Running Stable Valid
+v Tor 0.2.5.10
+w Bandwidth=18
+p reject 1-65535
+`
+
+	signature := "directory-signature 5420FD8EA46BD4290F1D07A1883C9D85ECC486C4 CCB7170F6B270B44301712DD7BC04BF9515AF374"
+
+	s, done, err := extractStatusEntry(goodStatusEntry + signature)
+	if err != nil {
+		t.Error("Failed to extract valid status entry.", err)
+	}
+
+	if strings.TrimSpace(s) != strings.TrimSpace(goodStatusEntry) {
+		t.Error("Failed to extract correct status entry.")
+	}
+
+	if done != true {
+		t.Error("Failed to state that extraction is done.")
+	}
+
+	s, done, err = extractStatusEntry(goodStatusEntry + "\nr foo" + signature)
+	if done == true {
+		t.Error("Failed to state that extraction is not yet done.")
 	}
 }

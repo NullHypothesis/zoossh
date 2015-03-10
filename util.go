@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -18,17 +19,15 @@ type QueueUnit struct {
 	Err   error
 }
 
-type Delimiter struct {
-	Pattern string
-	Offset  uint
-	Skip    uint
-}
-
 type Annotation struct {
 	Type  string
 	Major string
 	Minor string
 }
+
+// Extracts a string unit from an archive file that can be readily thrown into
+// the respective parser.
+type StringExtractor func(string) (string, bool, error)
 
 func (a *Annotation) String() string {
 
@@ -141,10 +140,10 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 	return invalidFormat
 }
 
-// Dissects the given file into string chunks as specified by the given
-// delimiter.  The resulting string chunks are then written to the given queue
-// where the receiving end parses them.
-func DissectFile(fd *os.File, delim Delimiter, queue chan QueueUnit) {
+// Dissects the given file into string chunks by using the given string
+// extraction function.  The resulting string chunks are then written to the
+// given queue where the receiving end parses them.
+func DissectFile(fd *os.File, extractor StringExtractor, queue chan QueueUnit) {
 
 	defer close(queue)
 
@@ -156,21 +155,18 @@ func DissectFile(fd *os.File, delim Delimiter, queue chan QueueUnit) {
 	rawContent := string(blurb)
 
 	for {
-		// Jump to the end of the next string blurb.
-		position := strings.Index(rawContent, delim.Pattern)
-		if position == -1 {
+		unit, done, err := extractor(rawContent)
+		if err != nil {
+			log.Println("Error in extraction function: ", err)
 			break
 		}
-		position += int(delim.Offset)
 
-		if delim.Skip > 0 {
-			delim.Skip -= 1
-		} else {
-			queue <- QueueUnit{rawContent[:position], nil}
+		queue <- QueueUnit{unit, nil}
+		rawContent = rawContent[len(unit):]
+
+		if done {
+			break
 		}
-
-		// Point to the beginning of the next string blurb.
-		rawContent = rawContent[position:]
 	}
 }
 
