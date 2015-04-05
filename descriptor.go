@@ -83,12 +83,49 @@ type RouterDescriptors struct {
 	RouterDescriptors map[string]func() *RouterDescriptor
 }
 
-// PrintObjects implements the ObjectCollector interface.
-func (desc RouterDescriptors) PrintObjects() {
+// Print implements the Object interface.  It returns the descriptor's string
+// representation.
+func (desc *RouterDescriptor) Print() string {
 
-	for _, getValue := range desc.RouterDescriptors {
-		fmt.Println(getValue())
-	}
+	return desc.String()
+}
+
+// GetFingerprint implements the Object interface.  It returns the descriptor's
+// fingerprint.
+func (desc *RouterDescriptor) GetFingerprint() string {
+
+	return strings.ToUpper(desc.Fingerprint)
+}
+
+// Length implements the ObjectSet interface.  It returns the length of the
+// router descriptors.
+func (descs *RouterDescriptors) Length() int {
+
+	return len(descs.RouterDescriptors)
+}
+
+// Iterate implements the ObjectSet interface.  Using a channel, it iterates
+// over and returns all router descriptors.
+func (descs *RouterDescriptors) Iterate() <-chan Object {
+
+	ch := make(chan Object)
+
+	go func() {
+		for _, getVal := range descs.RouterDescriptors {
+			ch <- getVal()
+		}
+		close(ch)
+	}()
+
+	return ch
+}
+
+// GetObject implements the ObjectSet interface.  It returns the object
+// identified by the given fingerprint.  If the object is not present in the
+// set, false is returned, otherwise true.
+func (desc *RouterDescriptors) GetObject(fingerprint string) (Object, bool) {
+
+	return desc.Get(fingerprint)
 }
 
 // NewRouterDescriptors serves as a constructor and returns a pointer to a

@@ -65,12 +65,49 @@ type Consensus struct {
 	RouterStatuses map[string]func() *RouterStatus
 }
 
-// PrintObjects implements the ObjectCollector interface.
-func (c Consensus) PrintObjects() {
+// Print implements the Object interface.  It returns the router status' string
+// representation.
+func (s *RouterStatus) Print() string {
 
-	for _, getValue := range c.RouterStatuses {
-		fmt.Println(getValue())
-	}
+	return s.String()
+}
+
+// GetFingerprint implements the Object interface.  It returns the router
+// status' fingerprint.
+func (s *RouterStatus) GetFingerprint() string {
+
+	return strings.ToUpper(s.Fingerprint)
+}
+
+// Length implements the ObjectSet interface.  It returns the length of the
+// consensus.
+func (c *Consensus) Length() int {
+
+	return len(c.RouterStatuses)
+}
+
+// Iterate implements the ObjectSet interface.  Using a channel, it iterates
+// over and returns all router statuses.
+func (c *Consensus) Iterate() <-chan Object {
+
+	ch := make(chan Object)
+
+	go func() {
+		for _, getVal := range c.RouterStatuses {
+			ch <- getVal()
+		}
+		close(ch)
+	}()
+
+	return ch
+}
+
+// GetObject implements the ObjectSet interface.  It returns the object
+// identified by the given fingerprint.  If the object is not present in the
+// set, false is returned, otherwise true.
+func (c *Consensus) GetObject(fingerprint string) (Object, bool) {
+
+	return c.Get(fingerprint)
 }
 
 // NewConsensus serves as a constructor and returns a pointer to a freshly
@@ -99,12 +136,6 @@ func (c *Consensus) Set(fingerprint string, status *RouterStatus) {
 	c.RouterStatuses[strings.ToUpper(fingerprint)] = func() *RouterStatus {
 		return status
 	}
-}
-
-// Length returns the length of the consensus.
-func (c *Consensus) Length() int {
-
-	return len(c.RouterStatuses)
 }
 
 // Subtract removes all routers which are part of the given consensus b from

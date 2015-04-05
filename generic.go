@@ -6,14 +6,24 @@ import (
 	"fmt"
 )
 
-type ObjectCollector interface {
-	PrintObjects()
+// Object defines functions that should be supported by a data element, e.g., a
+// router descriptor, or a router status in a consensus.
+type Object interface {
+	Print() string
+	GetFingerprint() string
+}
+
+// ObjectSet defines functions that should be supported by a set of objects.
+type ObjectSet interface {
+	Length() int
+	Iterate() <-chan Object
+	GetObject(string) (Object, bool)
 }
 
 // ParseUnknownFile attempts to parse a file whose content we don't know.  We
 // try to use the right parser by looking at the file's annotation.  An
-// ObjectCollector is returned if parsing was successful.
-func ParseUnknownFile(fileName string) (ObjectCollector, error) {
+// ObjectSet is returned if parsing was successful.
+func ParseUnknownFile(fileName string) (ObjectSet, error) {
 
 	// First, get the file's annotation which we then use to figure out what
 	// parser we need.
