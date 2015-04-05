@@ -25,15 +25,23 @@ Examples
 Here's how you can parse a network status document and iterate over all relay
 statuses:
 
-    consensus, _ := zoossh.ParseConsensusFile(fileName)
-    for _, status := range (*consensus).RouterStatuses {
+    consensus, err := zoossh.ParseConsensusFile(fileName)
+    if err != nil {
+        // Handle error.
+    }
+
+    for status := range consensus.Iterate() {
         fmt.Println(status)
     }
 
 Similarly, here's how you can parse a file containing server descriptors:
 
-    descs, _ := zoossh.ParseDescriptorFile(fileName)
-    for _, desc := range descs {
+    descriptors, err := zoossh.ParseDescriptorFile(fileName)
+    if err != nil {
+        // Handle error.
+    }
+
+    for desc := range descriptors.Iterate() {
         fmt.Println(desc)
     }
 
