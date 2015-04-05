@@ -56,8 +56,19 @@ func TestStringToPort(t *testing.T) {
 	}
 }
 
+// Test the function String().
+func TestAnnotationString(t *testing.T) {
+
+	a := Annotation{"foobar", "0", "0"}
+	s := a.String()
+
+	if s != "@type foobar 0.0" {
+		t.Errorf("Badly formatted annotation: %s", s)
+	}
+}
+
 // Test the function Equals().
-func TestEquals(t *testing.T) {
+func TestAnnotationEquals(t *testing.T) {
 
 	a := Annotation{"a", "b", "c"}
 	b := Annotation{"a", "b", "c"}
