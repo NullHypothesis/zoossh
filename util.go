@@ -113,7 +113,7 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 
 	// Set file descriptor back because NewScanner() reads and buffers large
 	// chunks of data.
-	fd.Seek(before + int64(len(annotation)), os.SEEK_SET)
+	fd.Seek(before+int64(len(annotation)), os.SEEK_SET)
 
 	invalidFormat := fmt.Errorf("Unexpected file annotation: %s", annotation)
 
