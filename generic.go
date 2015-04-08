@@ -9,7 +9,7 @@ import (
 // Object defines functions that should be supported by a data element, e.g., a
 // router descriptor, or a router status in a consensus.
 type Object interface {
-	Print() string
+	String() string
 	GetFingerprint() string
 }
 

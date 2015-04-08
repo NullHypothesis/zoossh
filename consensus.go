@@ -65,11 +65,22 @@ type Consensus struct {
 	RouterStatuses map[string]func() *RouterStatus
 }
 
-// Print implements the Object interface.  It returns the router status' string
-// representation.
-func (s *RouterStatus) Print() string {
+// String implements the String as well as the Object interface.  It returns
+// the status' string representation.
+func (s *RouterStatus) String() string {
 
-	return s.String()
+	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
+		"Flags: %s\nDir port: %d\nPublished: %s\nVersion: %s"
+
+	return fmt.Sprintf(fmtString,
+		s.Nickname,
+		s.Address,
+		s.ORPort,
+		strings.ToUpper(s.Fingerprint),
+		s.Flags,
+		s.DirPort,
+		s.Publication,
+		s.TorVersion)
 }
 
 // GetFingerprint implements the Object interface.  It returns the router
@@ -217,23 +228,6 @@ func (flags RouterFlags) String() string {
 	}
 
 	return fmt.Sprintf(strings.Join(stringFlags, ", "))
-}
-
-// Implement the Stringer interface for pretty printing.
-func (status RouterStatus) String() string {
-
-	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
-		"Flags: %s\nDir port: %d\nPublished: %s\nVersion: %s\n"
-
-	return fmt.Sprintf(fmtString,
-		status.Nickname,
-		status.Address,
-		status.ORPort,
-		strings.ToUpper(status.Fingerprint),
-		status.Flags,
-		status.DirPort,
-		status.Publication,
-		status.TorVersion)
 }
 
 func parseRouterFlags(flags []string) *RouterFlags {

@@ -83,11 +83,27 @@ type RouterDescriptors struct {
 	RouterDescriptors map[string]func() *RouterDescriptor
 }
 
-// Print implements the Object interface.  It returns the descriptor's string
-// representation.
-func (desc *RouterDescriptor) Print() string {
+// String implements the String as well as the Object interface.  It returns
+// the descriptor's string representation.
+func (desc *RouterDescriptor) String() string {
 
-	return desc.String()
+	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
+		"Dir port: %d\nPublished: %s\nUptime: %d\nContact: %s\nOperating " +
+		"system: %s\nVersion: %s\nAccept: %s\nReject: %s"
+
+	return fmt.Sprintf(fmtString,
+		desc.Nickname,
+		desc.Address,
+		desc.ORPort,
+		desc.Fingerprint,
+		desc.DirPort,
+		desc.Published,
+		desc.Uptime,
+		desc.Contact,
+		desc.OperatingSystem,
+		desc.TorVersion,
+		desc.RawAccept,
+		desc.RawReject)
 }
 
 // GetFingerprint implements the Object interface.  It returns the descriptor's
@@ -156,24 +172,6 @@ func (d *RouterDescriptors) Set(fingerprint string, descriptor *RouterDescriptor
 	}
 }
 
-// Implement the Stringer interface for pretty printing.
-func (desc RouterDescriptor) String() string {
-
-	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
-		"Dir port: %d\nPublished: %s\nUptime: %d\nContact: %s\nOperating " +
-		"system: %s\nVersion: %s\n"
-
-	return fmt.Sprintf(fmtString,
-		desc.Nickname,
-		desc.Address,
-		desc.ORPort,
-		desc.Fingerprint,
-		desc.DirPort,
-		desc.Published,
-		desc.Uptime,
-		desc.Contact,
-		desc.OperatingSystem,
-		desc.TorVersion)
 }
 
 // LazyParseRawDescriptor lazily parses a raw router descriptor (in string
