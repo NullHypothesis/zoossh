@@ -170,6 +170,14 @@ func (d *RouterDescriptors) Set(fingerprint string, descriptor *RouterDescriptor
 	}
 }
 
+// HasFamily returns true if the given relay identified by its fingerprint is
+// part of this relay's family.
+func (desc *RouterDescriptor) HasFamily(fingerprint string) bool {
+
+	_, ok := desc.Family[fingerprint]
+	return ok
+}
+
 // LazyParseRawDescriptor lazily parses a raw router descriptor (in string
 // format) and returns the descriptor's fingerprint, a function returning the
 // descriptor, and an error if the descriptor could not be parsed.  Parsing is
