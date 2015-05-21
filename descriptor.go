@@ -60,7 +60,7 @@ type RouterDescriptor struct {
 	Hibernating bool
 
 	// The single fields of a "family" line.
-	Family []string
+	Family map[string]bool
 
 	// The single fields of a "contact" line.
 	Contact string
@@ -151,6 +151,13 @@ func NewRouterDescriptors() *RouterDescriptors {
 	return &RouterDescriptors{RouterDescriptors: make(map[string]func() *RouterDescriptor)}
 }
 
+// NewRouterDescriptor serves as a constructor and returns a pointer to a
+// freshly allocated and empty RouterDescriptor struct.
+func NewRouterDescriptor() *RouterDescriptor {
+
+	return &RouterDescriptor{Family: make(map[string]bool)}
+}
+
 // Get returns the router descriptor for the given fingerprint and a boolean
 // value indicating if the descriptor could be found.
 func (d *RouterDescriptors) Get(fingerprint string) (*RouterDescriptor, bool) {
@@ -217,7 +224,7 @@ func LazyParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescrip
 // LazyParseRawDescriptor, parsing is *not* delayed.
 func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor, error) {
 
-	var descriptor *RouterDescriptor = new(RouterDescriptor)
+	var descriptor *RouterDescriptor = NewRouterDescriptor()
 
 	lines := strings.Split(rawDescriptor, "\n")
 
@@ -264,7 +271,10 @@ func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor,
 			descriptor.BandwidthObs, _ = strconv.ParseUint(words[3], 10, 64)
 
 		case "family":
-			descriptor.Family = words[1:]
+			for _, word := range words[1:] {
+				fpr := strings.Trim(word, "$")
+				descriptor.Family[fpr] = true
+			}
 
 		case "contact":
 			descriptor.Contact = strings.Join(words[1:], " ")
