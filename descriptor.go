@@ -89,7 +89,7 @@ func (desc *RouterDescriptor) String() string {
 
 	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
 		"Dir port: %d\nPublished: %s\nUptime: %d\nContact: %s\nOperating " +
-		"system: %s\nVersion: %s\nAccept: %s\nReject: %s"
+		"system: %s\nVersion: %s"
 
 	return fmt.Sprintf(fmtString,
 		desc.Nickname,
@@ -101,9 +101,7 @@ func (desc *RouterDescriptor) String() string {
 		desc.Uptime,
 		desc.Contact,
 		desc.OperatingSystem,
-		desc.TorVersion,
-		desc.RawAccept,
-		desc.RawReject)
+		desc.TorVersion)
 }
 
 // GetFingerprint implements the Object interface.  It returns the descriptor's
@@ -170,8 +168,6 @@ func (d *RouterDescriptors) Set(fingerprint string, descriptor *RouterDescriptor
 	d.RouterDescriptors[strings.ToUpper(fingerprint)] = func() *RouterDescriptor {
 		return descriptor
 	}
-}
-
 }
 
 // LazyParseRawDescriptor lazily parses a raw router descriptor (in string
