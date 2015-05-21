@@ -72,8 +72,10 @@ type RouterDescriptor struct {
 	NTorOnionKey string
 	SigningKey   string
 
-	Accept []*ExitPattern
-	Reject []*ExitPattern
+	RawAccept string
+	RawReject string
+	Accept    []*ExitPattern
+	Reject    []*ExitPattern
 }
 
 type RouterDescriptors struct {
@@ -269,6 +271,12 @@ func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor,
 
 		case "hidden-service-dir":
 			descriptor.HiddenServiceDir = true
+
+		case "reject":
+			descriptor.RawReject += words[1] + " "
+
+		case "accept":
+			descriptor.RawAccept += words[1] + " "
 		}
 	}
 
