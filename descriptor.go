@@ -110,7 +110,7 @@ func (desc *RouterDescriptor) String() string {
 // fingerprint.
 func (desc *RouterDescriptor) GetFingerprint() string {
 
-	return strings.ToUpper(desc.Fingerprint)
+	return desc.Fingerprint
 }
 
 // Length implements the ObjectSet interface.  It returns the length of the
@@ -162,7 +162,7 @@ func NewRouterDescriptor() *RouterDescriptor {
 // value indicating if the descriptor could be found.
 func (d *RouterDescriptors) Get(fingerprint string) (*RouterDescriptor, bool) {
 
-	getDescriptor, exists := d.RouterDescriptors[strings.ToUpper(fingerprint)]
+	getDescriptor, exists := d.RouterDescriptors[SanitiseFingerprint(fingerprint)]
 	if !exists {
 		return nil, exists
 	}
@@ -174,7 +174,7 @@ func (d *RouterDescriptors) Get(fingerprint string) (*RouterDescriptor, bool) {
 // descriptor.
 func (d *RouterDescriptors) Set(fingerprint string, descriptor *RouterDescriptor) {
 
-	d.RouterDescriptors[strings.ToUpper(fingerprint)] = func() *RouterDescriptor {
+	d.RouterDescriptors[SanitiseFingerprint(fingerprint)] = func() *RouterDescriptor {
 		return descriptor
 	}
 }
@@ -183,7 +183,7 @@ func (d *RouterDescriptors) Set(fingerprint string, descriptor *RouterDescriptor
 // part of this relay's family.
 func (desc *RouterDescriptor) HasFamily(fingerprint string) bool {
 
-	_, ok := desc.Family[fingerprint]
+	_, ok := desc.Family[SanitiseFingerprint(fingerprint)]
 	return ok
 }
 
@@ -211,7 +211,7 @@ func LazyParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescrip
 
 		if words[0] == "fingerprint" {
 			fingerprint = strings.Join(words[1:], "")
-			return fingerprint, getDescriptor, nil
+			return SanitiseFingerprint(fingerprint), getDescriptor, nil
 		}
 	}
 
@@ -260,7 +260,7 @@ func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor,
 			descriptor.Published = time
 
 		case "fingerprint":
-			descriptor.Fingerprint = strings.Join(words[1:], "")
+			descriptor.Fingerprint = SanitiseFingerprint(strings.Join(words[1:], ""))
 
 		case "hibernating":
 			descriptor.Hibernating, _ = strconv.ParseBool(words[1])
@@ -361,7 +361,7 @@ func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error)
 			return nil, err
 		}
 
-		descriptors.RouterDescriptors[strings.ToUpper(fingerprint)] = getDescriptor
+		descriptors.RouterDescriptors[SanitiseFingerprint(fingerprint)] = getDescriptor
 	}
 
 	return descriptors, nil

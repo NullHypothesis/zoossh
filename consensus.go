@@ -76,7 +76,7 @@ func (s *RouterStatus) String() string {
 		s.Nickname,
 		s.Address,
 		s.ORPort,
-		strings.ToUpper(s.Fingerprint),
+		s.Fingerprint,
 		s.Flags,
 		s.DirPort,
 		s.Publication,
@@ -87,7 +87,7 @@ func (s *RouterStatus) String() string {
 // status' fingerprint.
 func (s *RouterStatus) GetFingerprint() string {
 
-	return strings.ToUpper(s.Fingerprint)
+	return s.Fingerprint
 }
 
 // Length implements the ObjectSet interface.  It returns the length of the
@@ -132,7 +132,7 @@ func NewConsensus() *Consensus {
 // indicating if the status could be found in the consensus.
 func (c *Consensus) Get(fingerprint string) (*RouterStatus, bool) {
 
-	getStatus, exists := c.RouterStatuses[strings.ToUpper(fingerprint)]
+	getStatus, exists := c.RouterStatuses[SanitiseFingerprint(fingerprint)]
 	if !exists {
 		return nil, exists
 	}
@@ -144,7 +144,7 @@ func (c *Consensus) Get(fingerprint string) (*RouterStatus, bool) {
 // to the consensus.
 func (c *Consensus) Set(fingerprint string, status *RouterStatus) {
 
-	c.RouterStatuses[strings.ToUpper(fingerprint)] = func() *RouterStatus {
+	c.RouterStatuses[SanitiseFingerprint(fingerprint)] = func() *RouterStatus {
 		return status
 	}
 }
@@ -285,7 +285,7 @@ func LazyParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) 
 		words := strings.Split(line, " ")
 		if words[0] == "r" {
 			fingerprint, err := Base64ToString(words[2])
-			return fingerprint, getStatus, err
+			return SanitiseFingerprint(fingerprint), getStatus, err
 		}
 	}
 
@@ -298,7 +298,6 @@ func LazyParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) 
 func ParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
 
 	var status *RouterStatus = new(RouterStatus)
-	var err error
 
 	lines := strings.Split(rawStatus, "\n")
 
@@ -312,10 +311,11 @@ func ParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
 
 		case "r":
 			status.Nickname = words[1]
-			status.Fingerprint, err = Base64ToString(words[2])
+			fingerprint, err := Base64ToString(words[2])
 			if err != nil {
 				return "", nil, err
 			}
+			status.Fingerprint = SanitiseFingerprint(fingerprint)
 
 			status.Digest, err = Base64ToString(words[3])
 			if err != nil {
@@ -417,7 +417,7 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 			return nil, err
 		}
 
-		consensus.RouterStatuses[strings.ToUpper(fingerprint)] = getStatus
+		consensus.RouterStatuses[SanitiseFingerprint(fingerprint)] = getStatus
 	}
 
 	return consensus, nil

@@ -176,3 +176,10 @@ func TestCheckAnnotation(t *testing.T) {
 		}
 	}
 }
+
+func TestSanitiseFingerprint(t *testing.T) {
+
+	if SanitiseFingerprint(" foo bar\n \t") != "FOO BAR" {
+		t.Error("Fingerprint not sanitised successfully.")
+	}
+}
