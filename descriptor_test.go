@@ -134,3 +134,27 @@ Oa5fhjBu72rul97Aa4bJPZKa+RJNCGUKJuFGoAlZV7I=
 		t.Error("Failed to reject incomplete server descriptor.")
 	}
 }
+
+func TestNewRouterDescriptor(t *testing.T) {
+
+	desc := NewRouterDescriptor()
+	if desc.Family == nil {
+		t.Error("Family map is not initialised.")
+	}
+}
+
+func TestNewRouterDescriptors(t *testing.T) {
+
+	descs := NewRouterDescriptors()
+	if descs.RouterDescriptors == nil {
+		t.Error("RouterDescriptors map is not initialised.")
+	}
+}
+
+func TestString(t *testing.T) {
+
+	desc := NewRouterDescriptor()
+	if len(desc.String()) == 0 {
+		t.Error("Empty string for String() method returned.")
+	}
+}
