@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Benchmark the time it takes to parse a consensus file.
@@ -182,5 +183,29 @@ p reject 1-65535
 	s, done, err = extractStatusEntry(goodStatusEntry + "\nr foo" + signature)
 	if done == true {
 		t.Error("Failed to state that extraction is not yet done.")
+	}
+}
+
+func TestExtractMetaInfo(t *testing.T) {
+
+	consensus := NewConsensus()
+	if _, err := os.Stat(consensusFile); err != nil {
+		return
+	}
+
+	fd, err := os.Open(consensusFile)
+	if err != nil {
+		t.Error(err)
+	}
+
+	extractMetaInfo(fd, consensus)
+	if consensus.ValidAfter != time.Date(2014, time.December, 8, 16, 0, 0, 0, time.UTC) {
+		t.Error("ValidAfter time in consensus invalid.")
+	}
+	if consensus.FreshUntil != time.Date(2014, time.December, 8, 17, 0, 0, 0, time.UTC) {
+		t.Error("FreshUntil time in consensus invalid.")
+	}
+	if consensus.ValidUntil != time.Date(2014, time.December, 8, 19, 0, 0, 0, time.UTC) {
+		t.Error("ValidUntil time in consensus invalid.")
 	}
 }

@@ -3,6 +3,7 @@
 package zoossh
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -59,6 +60,11 @@ type RouterStatus struct {
 }
 
 type Consensus struct {
+
+	// Consensus meta information.
+	ValidAfter time.Time
+	FreshUntil time.Time
+	ValidUntil time.Time
 
 	// A map from relay fingerprint to a function which returns the relay
 	// status.
@@ -375,6 +381,47 @@ func extractStatusEntry(blurb string) (string, bool, error) {
 	return blurb[start : start+end], false, nil
 }
 
+// extractMetainfo extracts meta information of the open consensus document
+// (such as its validity times) and writes it to the provided consensus struct.
+func extractMetaInfo(fd *os.File, consensus *Consensus) error {
+
+	var err error
+
+	before, err := fd.Seek(0, os.SEEK_CUR)
+	if err != nil {
+		return err
+	}
+	// Later reset fd position because bufio.Scanner reads ahead.
+	defer fd.Seek(before, os.SEEK_SET)
+
+	scanner := bufio.NewScanner(fd)
+
+	extractTime := func() (time.Time, error) {
+		scanner.Scan()
+		line := scanner.Text()
+		words := strings.Split(line, " ")
+		return time.Parse("2006-01-02 15:04:05", strings.Join(words[1:], " "))
+	}
+
+	// The given file descriptor points to the beginning of the file.  Skip
+	// lines until we arrive at the consensus times.
+	for i := 0; i < 4; i++ {
+		scanner.Scan()
+	}
+
+	if consensus.ValidAfter, err = extractTime(); err != nil {
+		return err
+	}
+	if consensus.FreshUntil, err = extractTime(); err != nil {
+		return err
+	}
+	if consensus.ValidUntil, err = extractTime(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // parseConsensusFile parses the given file and returns a network consensus if
 // parsing was successful.  If there were any errors, an error string is
 // returned.  If the lazy argument is set to true, parsing of the router
@@ -397,6 +444,11 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 	defer fd.Close()
 
 	err = CheckAnnotation(fd, consensusAnnotations)
+	if err != nil {
+		return nil, err
+	}
+
+	err = extractMetaInfo(fd, consensus)
 	if err != nil {
 		return nil, err
 	}
