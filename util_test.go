@@ -93,7 +93,7 @@ func TestGetAnnotation(t *testing.T) {
 	if _, err := os.Stat(serverDescriptorFile); err == nil {
 		annotation, err := GetAnnotation(serverDescriptorFile)
 		if err != nil {
-			t.Errorf("GetAnnotation() failed to fetch annotation from \"%s\".", serverDescriptorFile)
+			t.Fatalf("GetAnnotation() failed to fetch annotation from \"%s\".", serverDescriptorFile)
 		}
 
 		if !annotation.Equals(expectedDescriptorAnnotation) {
@@ -105,7 +105,7 @@ func TestGetAnnotation(t *testing.T) {
 	if _, err := os.Stat(consensusFile); err == nil {
 		annotation, err := GetAnnotation(consensusFile)
 		if err != nil {
-			t.Errorf("GetAnnotation() failed to fetch annotation from \"%s\".", consensusFile)
+			t.Fatalf("GetAnnotation() failed to fetch annotation from \"%s\".", consensusFile)
 		}
 
 		if !annotation.Equals(expectedConsensusAnnotation) {

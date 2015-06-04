@@ -36,8 +36,15 @@ func TestInterfaces(t *testing.T) {
 		return
 	}
 
-	consensus, _ := ParseUnknownFile(consensusFile)
-	descriptors, _ := ParseUnknownFile(serverDescriptorFile)
+	consensus, err := ParseUnknownFile(consensusFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	descriptors, err := ParseUnknownFile(serverDescriptorFile)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Test the GetObject() function.
 	obj1, found := consensus.GetObject(testFingerprint)
