@@ -91,4 +91,17 @@ func TestInterfaces(t *testing.T) {
 	if counter != descriptors.Length() {
 		t.Error("Failed to iterate over all descriptors in descriptor set.")
 	}
+
+	// Test the Merge() function.
+	prevLength := consensus.Length()
+	consensus.Merge(consensus)
+	if consensus.Length() != prevLength {
+		t.Error("Consensus merge with itself caused unexpected length.")
+	}
+
+	prevLength = descriptors.Length()
+	descriptors.Merge(descriptors)
+	if descriptors.Length() != prevLength {
+		t.Error("Descriptors merge with itself caused unexpected length.")
+	}
 }

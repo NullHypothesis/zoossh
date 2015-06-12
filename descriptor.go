@@ -144,6 +144,18 @@ func (desc *RouterDescriptors) GetObject(fingerprint string) (Object, bool) {
 	return desc.Get(fingerprint)
 }
 
+// Merge merges the given object set with itself.
+func (descs *RouterDescriptors) Merge(objs ObjectSet) {
+
+	for desc := range descs.Iterate() {
+		fpr := desc.GetFingerprint()
+		_, exists := descs.Get(fpr)
+		if !exists {
+			descs.Set(fpr, desc.(*RouterDescriptor))
+		}
+	}
+}
+
 // NewRouterDescriptors serves as a constructor and returns a pointer to a
 // freshly allocated and empty RouterDescriptors struct.
 func NewRouterDescriptors() *RouterDescriptors {

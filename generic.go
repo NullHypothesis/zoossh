@@ -18,6 +18,7 @@ type ObjectSet interface {
 	Length() int
 	Iterate() <-chan Object
 	GetObject(string) (Object, bool)
+	Merge(ObjectSet)
 }
 
 // ParseUnknownFile attempts to parse a file whose content we don't know.  We

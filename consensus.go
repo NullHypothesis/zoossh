@@ -127,6 +127,18 @@ func (c *Consensus) GetObject(fingerprint string) (Object, bool) {
 	return c.Get(fingerprint)
 }
 
+// Merge merges the given object set with itself.
+func (c *Consensus) Merge(objs ObjectSet) {
+
+	for obj := range objs.Iterate() {
+		fpr := obj.GetFingerprint()
+		_, exists := c.Get(fpr)
+		if !exists {
+			c.Set(fpr, obj.(*RouterStatus))
+		}
+	}
+}
+
 // NewConsensus serves as a constructor and returns a pointer to a freshly
 // allocated and empty Consensus.
 func NewConsensus() *Consensus {
