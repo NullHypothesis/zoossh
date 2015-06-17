@@ -17,6 +17,8 @@ var consensusAnnotations map[Annotation]bool = map[Annotation]bool{
 	Annotation{"network-status-consensus-3", "1", "0"}: true,
 }
 
+type GetStatus func() *RouterStatus
+
 type RouterFlags struct {
 	Authority bool
 	BadExit   bool
@@ -68,7 +70,7 @@ type Consensus struct {
 
 	// A map from relay fingerprint to a function which returns the relay
 	// status.
-	RouterStatuses map[Fingerprint]func() *RouterStatus
+	RouterStatuses map[Fingerprint]GetStatus
 }
 
 // String implements the String as well as the Object interface.  It returns
@@ -143,7 +145,7 @@ func (c *Consensus) Merge(objs ObjectSet) {
 // allocated and empty Consensus.
 func NewConsensus() *Consensus {
 
-	return &Consensus{RouterStatuses: make(map[Fingerprint]func() *RouterStatus)}
+	return &Consensus{RouterStatuses: make(map[Fingerprint]GetStatus)}
 }
 
 // Get returns the router status for the given fingerprint and a boolean value
@@ -288,7 +290,7 @@ func parseRouterFlags(flags []string) *RouterFlags {
 // the router's fingerprint, a function which returns a RouterStatus, and an
 // error if there were any during parsing.  Parsing of the given string is
 // delayed until the returned function is executed.
-func LazyParseRawStatus(rawStatus string) (Fingerprint, func() *RouterStatus, error) {
+func LazyParseRawStatus(rawStatus string) (Fingerprint, GetStatus, error) {
 
 	// Delay parsing of the router status until this function is executed.
 	getStatus := func() *RouterStatus {
@@ -313,7 +315,7 @@ func LazyParseRawStatus(rawStatus string) (Fingerprint, func() *RouterStatus, er
 // ParseRawStatus parses a raw router status (in string format) and returns the
 // router's fingerprint, a function which returns a RouterStatus, and an error
 // if there were any during parsing.
-func ParseRawStatus(rawStatus string) (Fingerprint, func() *RouterStatus, error) {
+func ParseRawStatus(rawStatus string) (Fingerprint, GetStatus, error) {
 
 	var status *RouterStatus = new(RouterStatus)
 
@@ -441,7 +443,7 @@ func extractMetaInfo(fd *os.File, consensus *Consensus) error {
 func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 
 	var consensus = NewConsensus()
-	var statusParser func(string) (Fingerprint, func() *RouterStatus, error)
+	var statusParser func(string) (Fingerprint, GetStatus, error)
 
 	if lazy {
 		statusParser = LazyParseRawStatus

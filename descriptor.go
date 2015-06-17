@@ -21,6 +21,8 @@ var descriptorAnnotations map[Annotation]bool = map[Annotation]bool{
 	Annotation{"server-descriptor", "1", "0"}: true,
 }
 
+type GetDescriptor func() *RouterDescriptor
+
 // An exitpattern as defined in dirspec.txt, Section 2.1.3.
 type ExitPattern struct {
 	AddressSpec string
@@ -82,7 +84,7 @@ type RouterDescriptors struct {
 
 	// A map from relay fingerprint to a function which returns the router
 	// descriptor.
-	RouterDescriptors map[Fingerprint]func() *RouterDescriptor
+	RouterDescriptors map[Fingerprint]GetDescriptor
 }
 
 // String implements the String as well as the Object interface.  It returns
@@ -160,7 +162,7 @@ func (descs *RouterDescriptors) Merge(objs ObjectSet) {
 // freshly allocated and empty RouterDescriptors struct.
 func NewRouterDescriptors() *RouterDescriptors {
 
-	return &RouterDescriptors{RouterDescriptors: make(map[Fingerprint]func() *RouterDescriptor)}
+	return &RouterDescriptors{RouterDescriptors: make(map[Fingerprint]GetDescriptor)}
 }
 
 // NewRouterDescriptor serves as a constructor and returns a pointer to a
@@ -203,7 +205,7 @@ func (desc *RouterDescriptor) HasFamily(fingerprint Fingerprint) bool {
 // format) and returns the descriptor's fingerprint, a function returning the
 // descriptor, and an error if the descriptor could not be parsed.  Parsing is
 // delayed until the router descriptor is accessed.
-func LazyParseRawDescriptor(rawDescriptor string) (Fingerprint, func() *RouterDescriptor, error) {
+func LazyParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, error) {
 
 	var fingerprint Fingerprint
 
@@ -234,7 +236,7 @@ func LazyParseRawDescriptor(rawDescriptor string) (Fingerprint, func() *RouterDe
 // returns the descriptor's fingerprint, a function returning the descriptor,
 // and an error if the descriptor could not be parsed.  In contrast to
 // LazyParseRawDescriptor, parsing is *not* delayed.
-func ParseRawDescriptor(rawDescriptor string) (Fingerprint, func() *RouterDescriptor, error) {
+func ParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, error) {
 
 	var descriptor *RouterDescriptor = NewRouterDescriptor()
 
@@ -338,7 +340,7 @@ func extractDescriptor(blurb string) (string, bool, error) {
 func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error) {
 
 	var descriptors = NewRouterDescriptors()
-	var descriptorParser func(descriptor string) (Fingerprint, func() *RouterDescriptor, error)
+	var descriptorParser func(descriptor string) (Fingerprint, GetDescriptor, error)
 
 	if lazy {
 		descriptorParser = LazyParseRawDescriptor
