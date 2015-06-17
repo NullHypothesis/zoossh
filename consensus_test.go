@@ -63,9 +63,9 @@ func BenchmarkLConsensusParsingAndGetting(b *testing.B) {
 
 func TestConsensusOperations(t *testing.T) {
 
-	validFingerprint1 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	validFingerprint2 := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-	invalidFingerprint := "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+	validFingerprint1 := Fingerprint("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	validFingerprint2 := Fingerprint("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	invalidFingerprint := Fingerprint("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
 
 	// Get a fresh consensus.
 	consensus := NewConsensus()
@@ -132,7 +132,7 @@ p reject 1-65535`)
 		t.Error(err)
 	}
 
-	if strings.ToUpper(fingerprint1) != "CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912" {
+	if strings.ToUpper(string(fingerprint1)) != "CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912" {
 		t.Error("Unexpected fingerprint for router status.")
 	}
 

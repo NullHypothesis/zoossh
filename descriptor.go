@@ -54,13 +54,13 @@ type RouterDescriptor struct {
 	Uptime uint64
 
 	// The single fields of a "fingerprint" line.
-	Fingerprint string
+	Fingerprint Fingerprint
 
 	// The single fields of a "hibernating" line.
 	Hibernating bool
 
 	// The single fields of a "family" line.
-	Family map[string]bool
+	Family map[Fingerprint]bool
 
 	// The single fields of a "contact" line.
 	Contact string
@@ -82,7 +82,7 @@ type RouterDescriptors struct {
 
 	// A map from relay fingerprint to a function which returns the router
 	// descriptor.
-	RouterDescriptors map[string]func() *RouterDescriptor
+	RouterDescriptors map[Fingerprint]func() *RouterDescriptor
 }
 
 // String implements the String as well as the Object interface.  It returns
@@ -108,7 +108,7 @@ func (desc *RouterDescriptor) String() string {
 
 // GetFingerprint implements the Object interface.  It returns the descriptor's
 // fingerprint.
-func (desc *RouterDescriptor) GetFingerprint() string {
+func (desc *RouterDescriptor) GetFingerprint() Fingerprint {
 
 	return desc.Fingerprint
 }
@@ -139,7 +139,7 @@ func (descs *RouterDescriptors) Iterate() <-chan Object {
 // GetObject implements the ObjectSet interface.  It returns the object
 // identified by the given fingerprint.  If the object is not present in the
 // set, false is returned, otherwise true.
-func (desc *RouterDescriptors) GetObject(fingerprint string) (Object, bool) {
+func (desc *RouterDescriptors) GetObject(fingerprint Fingerprint) (Object, bool) {
 
 	return desc.Get(fingerprint)
 }
@@ -160,19 +160,19 @@ func (descs *RouterDescriptors) Merge(objs ObjectSet) {
 // freshly allocated and empty RouterDescriptors struct.
 func NewRouterDescriptors() *RouterDescriptors {
 
-	return &RouterDescriptors{RouterDescriptors: make(map[string]func() *RouterDescriptor)}
+	return &RouterDescriptors{RouterDescriptors: make(map[Fingerprint]func() *RouterDescriptor)}
 }
 
 // NewRouterDescriptor serves as a constructor and returns a pointer to a
 // freshly allocated and empty RouterDescriptor struct.
 func NewRouterDescriptor() *RouterDescriptor {
 
-	return &RouterDescriptor{Family: make(map[string]bool)}
+	return &RouterDescriptor{Family: make(map[Fingerprint]bool)}
 }
 
 // Get returns the router descriptor for the given fingerprint and a boolean
 // value indicating if the descriptor could be found.
-func (d *RouterDescriptors) Get(fingerprint string) (*RouterDescriptor, bool) {
+func (d *RouterDescriptors) Get(fingerprint Fingerprint) (*RouterDescriptor, bool) {
 
 	getDescriptor, exists := d.RouterDescriptors[SanitiseFingerprint(fingerprint)]
 	if !exists {
@@ -184,7 +184,7 @@ func (d *RouterDescriptors) Get(fingerprint string) (*RouterDescriptor, bool) {
 
 // Set adds a new fingerprint mapping to a function returning the router
 // descriptor.
-func (d *RouterDescriptors) Set(fingerprint string, descriptor *RouterDescriptor) {
+func (d *RouterDescriptors) Set(fingerprint Fingerprint, descriptor *RouterDescriptor) {
 
 	d.RouterDescriptors[SanitiseFingerprint(fingerprint)] = func() *RouterDescriptor {
 		return descriptor
@@ -193,7 +193,7 @@ func (d *RouterDescriptors) Set(fingerprint string, descriptor *RouterDescriptor
 
 // HasFamily returns true if the given relay identified by its fingerprint is
 // part of this relay's family.
-func (desc *RouterDescriptor) HasFamily(fingerprint string) bool {
+func (desc *RouterDescriptor) HasFamily(fingerprint Fingerprint) bool {
 
 	_, ok := desc.Family[SanitiseFingerprint(fingerprint)]
 	return ok
@@ -203,9 +203,9 @@ func (desc *RouterDescriptor) HasFamily(fingerprint string) bool {
 // format) and returns the descriptor's fingerprint, a function returning the
 // descriptor, and an error if the descriptor could not be parsed.  Parsing is
 // delayed until the router descriptor is accessed.
-func LazyParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor, error) {
+func LazyParseRawDescriptor(rawDescriptor string) (Fingerprint, func() *RouterDescriptor, error) {
 
-	var fingerprint string
+	var fingerprint Fingerprint
 
 	// Delay parsing of the router descriptor until this function is executed.
 	getDescriptor := func() *RouterDescriptor {
@@ -222,7 +222,7 @@ func LazyParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescrip
 		}
 
 		if words[0] == "fingerprint" {
-			fingerprint = strings.Join(words[1:], "")
+			fingerprint = Fingerprint(strings.Join(words[1:], ""))
 			return SanitiseFingerprint(fingerprint), getDescriptor, nil
 		}
 	}
@@ -234,7 +234,7 @@ func LazyParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescrip
 // returns the descriptor's fingerprint, a function returning the descriptor,
 // and an error if the descriptor could not be parsed.  In contrast to
 // LazyParseRawDescriptor, parsing is *not* delayed.
-func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor, error) {
+func ParseRawDescriptor(rawDescriptor string) (Fingerprint, func() *RouterDescriptor, error) {
 
 	var descriptor *RouterDescriptor = NewRouterDescriptor()
 
@@ -272,7 +272,7 @@ func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor,
 			descriptor.Published = time
 
 		case "fingerprint":
-			descriptor.Fingerprint = SanitiseFingerprint(strings.Join(words[1:], ""))
+			descriptor.Fingerprint = SanitiseFingerprint(Fingerprint(strings.Join(words[1:], "")))
 
 		case "hibernating":
 			descriptor.Hibernating, _ = strconv.ParseBool(words[1])
@@ -284,7 +284,7 @@ func ParseRawDescriptor(rawDescriptor string) (string, func() *RouterDescriptor,
 
 		case "family":
 			for _, word := range words[1:] {
-				fpr := strings.Trim(word, "$")
+				fpr := Fingerprint(strings.Trim(word, "$"))
 				descriptor.Family[fpr] = true
 			}
 
@@ -338,7 +338,7 @@ func extractDescriptor(blurb string) (string, bool, error) {
 func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error) {
 
 	var descriptors = NewRouterDescriptors()
-	var descriptorParser func(descriptor string) (string, func() *RouterDescriptor, error)
+	var descriptorParser func(descriptor string) (Fingerprint, func() *RouterDescriptor, error)
 
 	if lazy {
 		descriptorParser = LazyParseRawDescriptor

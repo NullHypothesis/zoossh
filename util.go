@@ -185,7 +185,9 @@ func StringToPort(portStr string) uint16 {
 
 // SanitiseFingerprint returns a sanitised version of the given fingerprint by
 // making it upper case and removing leading and trailing white spaces.
-func SanitiseFingerprint(fingerprint string) string {
+func SanitiseFingerprint(fingerprint Fingerprint) Fingerprint {
 
-	return strings.ToUpper(strings.TrimSpace(fingerprint))
+	sanitised := strings.ToUpper(strings.TrimSpace(string(fingerprint)))
+
+	return Fingerprint(sanitised)
 }

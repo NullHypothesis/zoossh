@@ -36,7 +36,7 @@ type RouterStatus struct {
 
 	// The single fields of an "r" line.
 	Nickname    string
-	Fingerprint string
+	Fingerprint Fingerprint
 	Digest      string
 	Publication time.Time
 	Address     net.IP
@@ -68,7 +68,7 @@ type Consensus struct {
 
 	// A map from relay fingerprint to a function which returns the relay
 	// status.
-	RouterStatuses map[string]func() *RouterStatus
+	RouterStatuses map[Fingerprint]func() *RouterStatus
 }
 
 // String implements the String as well as the Object interface.  It returns
@@ -91,7 +91,7 @@ func (s *RouterStatus) String() string {
 
 // GetFingerprint implements the Object interface.  It returns the router
 // status' fingerprint.
-func (s *RouterStatus) GetFingerprint() string {
+func (s *RouterStatus) GetFingerprint() Fingerprint {
 
 	return s.Fingerprint
 }
@@ -122,7 +122,7 @@ func (c *Consensus) Iterate() <-chan Object {
 // GetObject implements the ObjectSet interface.  It returns the object
 // identified by the given fingerprint.  If the object is not present in the
 // set, false is returned, otherwise true.
-func (c *Consensus) GetObject(fingerprint string) (Object, bool) {
+func (c *Consensus) GetObject(fingerprint Fingerprint) (Object, bool) {
 
 	return c.Get(fingerprint)
 }
@@ -143,12 +143,12 @@ func (c *Consensus) Merge(objs ObjectSet) {
 // allocated and empty Consensus.
 func NewConsensus() *Consensus {
 
-	return &Consensus{RouterStatuses: make(map[string]func() *RouterStatus)}
+	return &Consensus{RouterStatuses: make(map[Fingerprint]func() *RouterStatus)}
 }
 
 // Get returns the router status for the given fingerprint and a boolean value
 // indicating if the status could be found in the consensus.
-func (c *Consensus) Get(fingerprint string) (*RouterStatus, bool) {
+func (c *Consensus) Get(fingerprint Fingerprint) (*RouterStatus, bool) {
 
 	getStatus, exists := c.RouterStatuses[SanitiseFingerprint(fingerprint)]
 	if !exists {
@@ -160,7 +160,7 @@ func (c *Consensus) Get(fingerprint string) (*RouterStatus, bool) {
 
 // Set adds a new fingerprint mapping to a function returning the router status
 // to the consensus.
-func (c *Consensus) Set(fingerprint string, status *RouterStatus) {
+func (c *Consensus) Set(fingerprint Fingerprint, status *RouterStatus) {
 
 	c.RouterStatuses[SanitiseFingerprint(fingerprint)] = func() *RouterStatus {
 		return status
@@ -288,7 +288,7 @@ func parseRouterFlags(flags []string) *RouterFlags {
 // the router's fingerprint, a function which returns a RouterStatus, and an
 // error if there were any during parsing.  Parsing of the given string is
 // delayed until the returned function is executed.
-func LazyParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
+func LazyParseRawStatus(rawStatus string) (Fingerprint, func() *RouterStatus, error) {
 
 	// Delay parsing of the router status until this function is executed.
 	getStatus := func() *RouterStatus {
@@ -303,7 +303,7 @@ func LazyParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) 
 		words := strings.Split(line, " ")
 		if words[0] == "r" {
 			fingerprint, err := Base64ToString(words[2])
-			return SanitiseFingerprint(fingerprint), getStatus, err
+			return SanitiseFingerprint(Fingerprint(fingerprint)), getStatus, err
 		}
 	}
 
@@ -313,7 +313,7 @@ func LazyParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) 
 // ParseRawStatus parses a raw router status (in string format) and returns the
 // router's fingerprint, a function which returns a RouterStatus, and an error
 // if there were any during parsing.
-func ParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
+func ParseRawStatus(rawStatus string) (Fingerprint, func() *RouterStatus, error) {
 
 	var status *RouterStatus = new(RouterStatus)
 
@@ -333,7 +333,7 @@ func ParseRawStatus(rawStatus string) (string, func() *RouterStatus, error) {
 			if err != nil {
 				return "", nil, err
 			}
-			status.Fingerprint = SanitiseFingerprint(fingerprint)
+			status.Fingerprint = SanitiseFingerprint(Fingerprint(fingerprint))
 
 			status.Digest, err = Base64ToString(words[3])
 			if err != nil {
@@ -441,7 +441,7 @@ func extractMetaInfo(fd *os.File, consensus *Consensus) error {
 func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 
 	var consensus = NewConsensus()
-	var statusParser func(string) (string, func() *RouterStatus, error)
+	var statusParser func(string) (Fingerprint, func() *RouterStatus, error)
 
 	if lazy {
 		statusParser = LazyParseRawStatus

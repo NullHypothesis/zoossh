@@ -26,7 +26,7 @@ func TestParseUnknownFile(t *testing.T) {
 
 func TestInterfaces(t *testing.T) {
 
-	testFingerprint := "9695DFC35FFEB861329B9F1AB04C46397020CE31"
+	testFingerprint := Fingerprint("9695DFC35FFEB861329B9F1AB04C46397020CE31")
 
 	if _, err := os.Stat(consensusFile); err != nil {
 		return

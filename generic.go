@@ -6,18 +6,21 @@ import (
 	"fmt"
 )
 
+// Fingerprint represents a relay's fingerprint as 40 hex digits.
+type Fingerprint string
+
 // Object defines functions that should be supported by a data element, e.g., a
 // router descriptor, or a router status in a consensus.
 type Object interface {
 	String() string
-	GetFingerprint() string
+	GetFingerprint() Fingerprint
 }
 
 // ObjectSet defines functions that should be supported by a set of objects.
 type ObjectSet interface {
 	Length() int
 	Iterate() <-chan Object
-	GetObject(string) (Object, bool)
+	GetObject(Fingerprint) (Object, bool)
 	Merge(ObjectSet)
 }
 
