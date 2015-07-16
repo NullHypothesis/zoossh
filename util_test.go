@@ -5,11 +5,13 @@ package zoossh
 import (
 	"os"
 	"testing"
+	"time"
 )
 
 // Run the file "setup_tests.sh" in the scripts/ directory to obtain these
 // files.
 const (
+	serverDescriptorDir  = "/tmp/collector-descriptors/"
 	serverDescriptorFile = "/tmp/server-descriptors"
 	consensusFile        = "/tmp/consensus"
 )
@@ -181,5 +183,37 @@ func TestSanitiseFingerprint(t *testing.T) {
 
 	if SanitiseFingerprint(" foo bar\n \t") != "FOO BAR" {
 		t.Error("Fingerprint not sanitised successfully.")
+	}
+}
+
+func TestLoadDescriptorFromDigest(t *testing.T) {
+
+	_, err := LoadDescriptorFromDigest("", "foobar", time.Now())
+	if err == nil {
+		t.Error("Non-existant digest did not return error.")
+	}
+
+	date := time.Date(2014, 12, 8, 0, 0, 0, 0, time.UTC)
+	if _, err := os.Stat(serverDescriptorDir); err == nil {
+		desc, err := LoadDescriptorFromDigest(serverDescriptorDir,
+			"7aef3ff4d6a3b20c03ebefef94e6dfca4d9b663a", date)
+		if err != nil {
+			t.Fatalf("Could not find and return descriptor.")
+		}
+
+		if desc.Fingerprint != Fingerprint("7BD84CB63845E0D61C1CFA83914A1B8C968482B1") {
+			t.Error("Invalid descriptor returned.")
+		}
+
+		// Test previous month.
+		desc, err = LoadDescriptorFromDigest(serverDescriptorDir,
+			"88827c73d5fd35e9638f820c44187ccdf8403b0f", date)
+		if err != nil {
+			t.Fatalf("Could not find and return descriptor from previous month.")
+		}
+
+		if desc.Fingerprint != Fingerprint("7BD84CB63845E0D61C1CFA83914A1B8C968482B1") {
+			t.Error("Invalid descriptor returned.")
+		}
 	}
 }

@@ -10,8 +10,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type QueueUnit struct {
@@ -190,4 +192,42 @@ func SanitiseFingerprint(fingerprint Fingerprint) Fingerprint {
 	sanitised := strings.ToUpper(strings.TrimSpace(string(fingerprint)))
 
 	return Fingerprint(sanitised)
+}
+
+// LoadDescriptorFromDigest takes as input the descriptor directory, a
+// descriptor's digest, and the date the digest was created.  It then attempts
+// to parse and return the descriptor referenced by the digest.  The descriptor
+// directory expects to contain CollecTor server descriptor archives such as:
+// server-descriptors-2015-03/
+// server-descriptors-2015-04/
+// ...
+func LoadDescriptorFromDigest(descriptorDir, digest string, date time.Time) (*RouterDescriptor, error) {
+
+	topDir := fmt.Sprintf("server-descriptors-%s", date.Format("2006-01"))
+	prevTopDir := fmt.Sprintf("server-descriptors-%s", date.AddDate(0, -1, 0).Format("2006-01"))
+	fileName := filepath.Join(descriptorDir, topDir, digest[0:1], digest[1:2], digest)
+
+	// If we cannot find the descriptor file, go one month back in time.
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		fileName = filepath.Join(descriptorDir, prevTopDir, digest[0:1], digest[1:2], digest)
+		if _, err := os.Stat(fileName); os.IsNotExist(err) {
+			return nil, fmt.Errorf("Could not find digest file %s in %s", digest, descriptorDir)
+		}
+	}
+
+	descs, err := ParseDescriptorFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	if descs.Length() != 1 {
+		return nil, fmt.Errorf("More than one descriptor in digest file %s.  Bug?", fileName)
+	}
+
+	var d *RouterDescriptor
+	for _, getDesc := range descs.RouterDescriptors {
+		d = getDesc()
+		break
+	}
+	return d, nil
 }
