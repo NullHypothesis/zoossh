@@ -172,6 +172,21 @@ func NewRouterDescriptor() *RouterDescriptor {
 	return &RouterDescriptor{Family: make(map[Fingerprint]bool)}
 }
 
+// ToSlice converts the given router descriptors to a slice.
+func (rd *RouterDescriptors) ToSlice() []GetDescriptor {
+
+	length := rd.Length()
+	descs := make([]GetDescriptor, length)
+
+	i := 0
+	for _, getDesc := range rd.RouterDescriptors {
+		descs[i] = getDesc
+		i += 1
+	}
+
+	return descs
+}
+
 // Get returns the router descriptor for the given fingerprint and a boolean
 // value indicating if the descriptor could be found.
 func (d *RouterDescriptors) Get(fingerprint Fingerprint) (*RouterDescriptor, bool) {

@@ -12,7 +12,7 @@ import (
 // Benchmark the time it takes to parse a consensus file.
 func BenchmarkConsensusParsing(b *testing.B) {
 
-	// Only run this benchmark if the descriptors file is there.
+	// Only run this benchmark if the consensus file is there.
 	if _, err := os.Stat(consensusFile); err == nil {
 		for i := 0; i < b.N; i++ {
 			ParseConsensusFile(consensusFile)
@@ -23,7 +23,7 @@ func BenchmarkConsensusParsing(b *testing.B) {
 // Benchmark the time it takes to lazily parse a consensus file.
 func BenchmarkLConsensusParsing(b *testing.B) {
 
-	// Only run this benchmark if the descriptors file is there.
+	// Only run this benchmark if the consensus file is there.
 	if _, err := os.Stat(consensusFile); err == nil {
 		for i := 0; i < b.N; i++ {
 			LazilyParseConsensusFile(consensusFile)
@@ -35,7 +35,7 @@ func BenchmarkLConsensusParsing(b *testing.B) {
 // statuses.
 func BenchmarkConsensusParsingAndGetting(b *testing.B) {
 
-	// Only run this benchmark if the descriptors file is there.
+	// Only run this benchmark if the consensus file is there.
 	if _, err := os.Stat(consensusFile); err == nil {
 		for i := 0; i < b.N; i++ {
 			consensus, _ := ParseConsensusFile(consensusFile)
@@ -50,7 +50,7 @@ func BenchmarkConsensusParsingAndGetting(b *testing.B) {
 // router statuses.
 func BenchmarkLConsensusParsingAndGetting(b *testing.B) {
 
-	// Only run this benchmark if the descriptors file is there.
+	// Only run this benchmark if the consensus file is there.
 	if _, err := os.Stat(consensusFile); err == nil {
 		for i := 0; i < b.N; i++ {
 			consensus, _ := LazilyParseConsensusFile(consensusFile)
@@ -207,5 +207,28 @@ func TestExtractMetaInfo(t *testing.T) {
 	}
 	if consensus.ValidUntil != time.Date(2014, time.December, 8, 19, 0, 0, 0, time.UTC) {
 		t.Error("ValidUntil time in consensus invalid.")
+	}
+}
+
+func TestConsensusToSlice(t *testing.T) {
+
+	// Only run this benchmark if the consensus file is there.
+	if _, err := os.Stat(consensusFile); err == nil {
+		consensus, err := ParseConsensusFile(consensusFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		consensusSlice := consensus.ToSlice()
+		if consensus.Length() != len(consensusSlice) {
+			t.Error("Consensus slice length differs from map length.")
+		}
+
+		for _, getStatus := range consensusSlice {
+			status := getStatus()
+			if _, found := consensus.Get(status.Fingerprint); !found {
+				t.Error("Router status in slice not found in map.")
+			}
+		}
 	}
 }

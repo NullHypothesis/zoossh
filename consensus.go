@@ -148,6 +148,22 @@ func NewConsensus() *Consensus {
 	return &Consensus{RouterStatuses: make(map[Fingerprint]GetStatus)}
 }
 
+// ToSlice converts the given consensus to a slice.  Consensus meta information
+// is lost.
+func (c *Consensus) ToSlice() []GetStatus {
+
+	length := c.Length()
+	statuses := make([]GetStatus, length)
+
+	i := 0
+	for _, getStatus := range c.RouterStatuses {
+		statuses[i] = getStatus
+		i += 1
+	}
+
+	return statuses
+}
+
 // Get returns the router status for the given fingerprint and a boolean value
 // indicating if the status could be found in the consensus.
 func (c *Consensus) Get(fingerprint Fingerprint) (*RouterStatus, bool) {

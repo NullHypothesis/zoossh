@@ -158,3 +158,26 @@ func TestString(t *testing.T) {
 		t.Error("Empty string for String() method returned.")
 	}
 }
+
+func TestDescriptorsToSlice(t *testing.T) {
+
+	// Only run this benchmark if the descriptors file is there.
+	if _, err := os.Stat(serverDescriptorFile); err == nil {
+		descs, err := ParseDescriptorFile(serverDescriptorFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		descSlice := descs.ToSlice()
+		if descs.Length() != len(descSlice) {
+			t.Error("Descriptor slice length differs from map length.")
+		}
+
+		for _, getDesc := range descSlice {
+			desc := getDesc()
+			if _, found := descs.Get(desc.Fingerprint); !found {
+				t.Error("Descriptor in slice not found in map.")
+			}
+		}
+	}
+}
