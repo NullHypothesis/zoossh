@@ -1,4 +1,7 @@
 ![zoossh logo](https://nullhypothesis.github.com/zoossh_logo.png)
+=================================================================
+
+[![Build Status](https://travis-ci.org/NullHypothesis/zoossh.svg?branch=master)](https://travis-ci.org/NullHypothesis/zoossh)
 
 Overview
 --------
