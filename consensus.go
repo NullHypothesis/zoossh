@@ -77,18 +77,15 @@ type Consensus struct {
 // the status' string representation.
 func (s *RouterStatus) String() string {
 
-	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
-		"Flags: %s\nDir port: %d\nPublished: %s\nVersion: %s"
-
-	return fmt.Sprintf(fmtString,
+	return fmt.Sprintf("%s,%s,%s,%d,%d,%s,%s,%s",
+		s.Fingerprint,
 		s.Nickname,
 		s.Address,
 		s.ORPort,
-		s.Fingerprint,
-		s.Flags,
 		s.DirPort,
+		s.Flags,
 		s.Publication,
-		s.TorVersion)
+		strings.Replace(s.TorVersion, ",", "", -1))
 }
 
 // GetFingerprint implements the Object interface.  It returns the router
@@ -263,7 +260,7 @@ func (flags RouterFlags) String() string {
 		stringFlags = append(stringFlags, "V2Dir")
 	}
 
-	return fmt.Sprintf(strings.Join(stringFlags, ", "))
+	return fmt.Sprintf(strings.Join(stringFlags, "|"))
 }
 
 func parseRouterFlags(flags []string) *RouterFlags {

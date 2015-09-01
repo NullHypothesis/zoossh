@@ -91,21 +91,17 @@ type RouterDescriptors struct {
 // the descriptor's string representation.
 func (desc *RouterDescriptor) String() string {
 
-	fmtString := "\nNickname: %s\nAddress: %s:%d\nFingerprint: %s\n" +
-		"Dir port: %d\nPublished: %s\nUptime: %d\nContact: %s\nOperating " +
-		"system: %s\nVersion: %s"
-
-	return fmt.Sprintf(fmtString,
+	return fmt.Sprintf("%s,%s,%s,%d,%d,%s,%d,%s,%s,%s",
+		desc.Fingerprint,
 		desc.Nickname,
 		desc.Address,
 		desc.ORPort,
-		desc.Fingerprint,
 		desc.DirPort,
 		desc.Published,
 		desc.Uptime,
-		desc.Contact,
-		desc.OperatingSystem,
-		desc.TorVersion)
+		strings.Replace(desc.OperatingSystem, ",", "", -1),
+		strings.Replace(desc.TorVersion, ",", "", -1),
+		strings.Replace(desc.Contact, ",", "", -1))
 }
 
 // GetFingerprint implements the Object interface.  It returns the descriptor's
