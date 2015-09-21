@@ -84,7 +84,7 @@ func (s *RouterStatus) String() string {
 		s.ORPort,
 		s.DirPort,
 		s.Flags,
-		s.Publication,
+		s.Publication.Format(time.RFC3339),
 		strings.Replace(s.TorVersion, ",", "", -1))
 }
 

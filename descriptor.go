@@ -97,7 +97,7 @@ func (desc *RouterDescriptor) String() string {
 		desc.Address,
 		desc.ORPort,
 		desc.DirPort,
-		desc.Published,
+		desc.Published.Format(time.RFC3339),
 		desc.Uptime,
 		strings.Replace(desc.OperatingSystem, ",", "", -1),
 		strings.Replace(desc.TorVersion, ",", "", -1),
