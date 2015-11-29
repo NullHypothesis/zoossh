@@ -16,6 +16,20 @@ const (
 	consensusFile        = "/tmp/consensus"
 )
 
+// Benchmark the time it takes to look up a descriptor.
+func BenchmarkDescriptorLookup(b *testing.B) {
+
+	digest := "88827c73d5fd35e9638f820c44187ccdf8403b0f"
+	date := time.Date(2014, time.December, 10, 0, 0, 0, 0, time.UTC)
+
+	// Only run this benchmark if the descriptors file is there.
+	if _, err := os.Stat(serverDescriptorDir); err == nil {
+		for i := 0; i < b.N; i++ {
+			LoadDescriptorFromDigest(serverDescriptorDir, digest, date)
+		}
+	}
+}
+
 // Test the function Base64ToString().
 func TestBase64ToString(t *testing.T) {
 

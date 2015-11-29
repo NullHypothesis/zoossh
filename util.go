@@ -31,6 +31,9 @@ type Annotation struct {
 // the respective parser.
 type StringExtractor func(string) (string, bool, error)
 
+// DescCache maps a descriptor's digest to its router descriptor.
+var DescCache = make(map[string]*RouterDescriptor)
+
 func (a *Annotation) String() string {
 
 	return fmt.Sprintf("@type %s %s.%s", a.Type, a.Major, a.Minor)
@@ -203,6 +206,11 @@ func SanitiseFingerprint(fingerprint Fingerprint) Fingerprint {
 // ...
 func LoadDescriptorFromDigest(descriptorDir, digest string, date time.Time) (*RouterDescriptor, error) {
 
+	// Check if we already have the descriptor in our local cache.
+	if desc, exists := DescCache[digest]; exists {
+		return desc, nil
+	}
+
 	topDir := fmt.Sprintf("server-descriptors-%s", date.Format("2006-01"))
 	prevTopDir := fmt.Sprintf("server-descriptors-%s", date.AddDate(0, -1, 0).Format("2006-01"))
 	fileName := filepath.Join(descriptorDir, topDir, digest[0:1], digest[1:2], digest)
@@ -229,5 +237,6 @@ func LoadDescriptorFromDigest(descriptorDir, digest string, date time.Time) (*Ro
 		d = getDesc()
 		break
 	}
+	DescCache[digest] = d
 	return d, nil
 }
