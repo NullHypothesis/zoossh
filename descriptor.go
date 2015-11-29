@@ -274,8 +274,13 @@ func ParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, error
 			descriptor.DirPort = StringToPort(words[5])
 
 		case "platform":
-			descriptor.OperatingSystem = words[4]
-			descriptor.TorVersion = words[2]
+			for i := 0; i < len(words); i++ {
+				if (strings.TrimSpace(words[i]) == "on") && (i < len(words)-1) {
+					descriptor.OperatingSystem = strings.Join(words[i+1:], " ")
+					descriptor.TorVersion = strings.Join(words[1:i-1], " ")
+					break
+				}
+			}
 
 		case "uptime":
 			descriptor.Uptime, _ = strconv.ParseUint(words[1], 10, 64)
