@@ -13,10 +13,10 @@ import (
 
 const (
 	// The layout of the "published" field.
-	publishedTimeLayout string = "2006-01-02 15:04:05"
+	publishedTimeLayout = "2006-01-02 15:04:05"
 )
 
-var descriptorAnnotations map[Annotation]bool = map[Annotation]bool{
+var descriptorAnnotations = map[Annotation]bool{
 	// The file format we currently (try to) support.
 	Annotation{"server-descriptor", "1", "0"}: true,
 }
