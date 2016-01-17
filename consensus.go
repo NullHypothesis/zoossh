@@ -103,14 +103,18 @@ func (c *Consensus) Length() int {
 }
 
 // Iterate implements the ObjectSet interface.  Using a channel, it iterates
-// over and returns all router statuses.
-func (c *Consensus) Iterate() <-chan Object {
+// over and returns all router statuses.  The given object filter can be used
+// to filter router statuses, e.g., by fingerprint.
+func (c *Consensus) Iterate(filter *ObjectFilter) <-chan Object {
 
 	ch := make(chan Object)
 
 	go func() {
-		for _, getVal := range c.RouterStatuses {
-			ch <- getVal()
+		for _, getStatus := range c.RouterStatuses {
+			status := getStatus()
+			if filter == nil || filter.MatchesRouterStatus(status) {
+				ch <- status
+			}
 		}
 		close(ch)
 	}()
@@ -129,7 +133,7 @@ func (c *Consensus) GetObject(fingerprint Fingerprint) (Object, bool) {
 // Merge merges the given object set with itself.
 func (c *Consensus) Merge(objs ObjectSet) {
 
-	for obj := range objs.Iterate() {
+	for obj := range objs.Iterate(nil) {
 		fpr := obj.GetFingerprint()
 		_, exists := c.Get(fpr)
 		if !exists {
@@ -447,6 +451,26 @@ func extractMetaInfo(fd *os.File, consensus *Consensus) error {
 	}
 
 	return nil
+}
+
+// MatchesRouterStatus returns true if fields of the given router status are
+// present in the object filter, e.g., the router's nickname is part of the
+// object filter.
+func (filter *ObjectFilter) MatchesRouterStatus(status *RouterStatus) bool {
+
+	if filter.HasIPAddr(status.Address) {
+		return true
+	}
+
+	if filter.HasFingerprint(status.Fingerprint) {
+		return true
+	}
+
+	if filter.HasNickname(status.Nickname) {
+		return true
+	}
+
+	return false
 }
 
 // parseConsensusFile parses the given file and returns a network consensus if

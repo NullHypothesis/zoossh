@@ -3,6 +3,7 @@
 package zoossh
 
 import (
+	"net"
 	"os"
 	"testing"
 )
@@ -77,7 +78,7 @@ func TestInterfaces(t *testing.T) {
 
 	// Test the Iterate() function.
 	counter := 0
-	for _ = range consensus.Iterate() {
+	for _ = range consensus.Iterate(nil) {
 		counter += 1
 	}
 	if counter != consensus.Length() {
@@ -85,7 +86,7 @@ func TestInterfaces(t *testing.T) {
 	}
 
 	counter = 0
-	for _ = range descriptors.Iterate() {
+	for _ = range descriptors.Iterate(nil) {
 		counter += 1
 	}
 	if counter != descriptors.Length() {
@@ -103,5 +104,105 @@ func TestInterfaces(t *testing.T) {
 	descriptors.Merge(descriptors)
 	if descriptors.Length() != prevLength {
 		t.Error("Descriptors merge with itself caused unexpected length.")
+	}
+}
+
+func TestIsEmpty(t *testing.T) {
+
+	filter := NewObjectFilter()
+	if !filter.IsEmpty() {
+		t.Error("Empty filter apparently not empty.")
+	}
+
+	filter.AddIPAddr(net.IP("1.2.3.4"))
+	if filter.IsEmpty() {
+		t.Error("Populated filter apparently empty.")
+	}
+}
+
+func TestFilterGetterSetter(t *testing.T) {
+
+	filter := NewObjectFilter()
+	fpr := Fingerprint("9B94CD0B7B8057EAF21BA7F023B7A1C8CA9CE645")
+	ipAddrs := net.IP("1.2.3.4")
+	nickname := "dummy-relay-nickname"
+
+	exists := filter.HasFingerprint(fpr)
+	if exists {
+		t.Error("Non-existing fingerprint apparently in filter.")
+	}
+
+	filter.AddFingerprint(fpr)
+	exists = filter.HasFingerprint(fpr)
+	if !exists {
+		t.Error("Existing fingerprint apparently not in filter.")
+	}
+
+	exists = filter.HasIPAddr(ipAddrs)
+	if exists {
+		t.Error("Non-existing IP address apparently in filter.")
+	}
+
+	filter.AddIPAddr(ipAddrs)
+	exists = filter.HasIPAddr(ipAddrs)
+	if !exists {
+		t.Error("Existing IP address apparently not in filter.")
+	}
+
+	exists = filter.HasNickname(nickname)
+	if exists {
+		t.Error("Non-existing nickname apparently in filter.")
+	}
+
+	filter.AddNickname(nickname)
+	exists = filter.HasNickname(nickname)
+	if !exists {
+		t.Error("Existing nickname apparently not in filter.")
+	}
+}
+
+func TestConsensusFiltering(t *testing.T) {
+
+	if _, err := os.Stat(consensusFile); err != nil {
+		return
+	}
+
+	consensus, err := ParseConsensusFile(consensusFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	filter := NewObjectFilter()
+	filter.AddFingerprint(Fingerprint("9B94CD0B7B8057EAF21BA7F023B7A1C8CA9CE645"))
+	filter.AddFingerprint(Fingerprint("CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912"))
+	count := 0
+	for _ = range consensus.Iterate(filter) {
+		count++
+	}
+	if count != 2 {
+		t.Error("Didn't filter correct amount of relays.")
+	}
+}
+
+func TestDescriptorFiltering(t *testing.T) {
+
+	if _, err := os.Stat(serverDescriptorFile); err != nil {
+		return
+	}
+
+	descriptors, err := ParseDescriptorFile(serverDescriptorFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	filter := NewObjectFilter()
+	filter.AddNickname("leenuts")
+	filter.AddNickname("manningsnowden2")
+	count := 0
+	for _ = range descriptors.Iterate(filter) {
+		count++
+	}
+	if count != 2 {
+		t.Error("Didn't filter correct amount of relays.")
 	}
 }

@@ -119,14 +119,18 @@ func (descs *RouterDescriptors) Length() int {
 }
 
 // Iterate implements the ObjectSet interface.  Using a channel, it iterates
-// over and returns all router descriptors.
-func (descs *RouterDescriptors) Iterate() <-chan Object {
+// over and returns all router descriptors.  The given object filter can be
+// used to filter descriptors, e.g., by fingerprint.
+func (descs *RouterDescriptors) Iterate(filter *ObjectFilter) <-chan Object {
 
 	ch := make(chan Object)
 
 	go func() {
-		for _, getVal := range descs.RouterDescriptors {
-			ch <- getVal()
+		for _, getDesc := range descs.RouterDescriptors {
+			desc := getDesc()
+			if filter == nil || filter.MatchesRouterDescriptor(desc) {
+				ch <- desc
+			}
 		}
 		close(ch)
 	}()
@@ -145,7 +149,7 @@ func (desc *RouterDescriptors) GetObject(fingerprint Fingerprint) (Object, bool)
 // Merge merges the given object set with itself.
 func (descs *RouterDescriptors) Merge(objs ObjectSet) {
 
-	for desc := range descs.Iterate() {
+	for desc := range descs.Iterate(nil) {
 		fpr := desc.GetFingerprint()
 		_, exists := descs.Get(fpr)
 		if !exists {
@@ -347,6 +351,26 @@ func extractDescriptor(blurb string) (string, bool, error) {
 	}
 
 	return blurb[start : start+end+len(marker)], done, nil
+}
+
+// MatchesRouterDescriptor returns true if fields of the given router
+// descriptor are present in the object filter, e.g., the descriptor's nickname
+// is part of the object filter.
+func (filter *ObjectFilter) MatchesRouterDescriptor(desc *RouterDescriptor) bool {
+
+	if filter.HasIPAddr(desc.Address) {
+		return true
+	}
+
+	if filter.HasFingerprint(desc.Fingerprint) {
+		return true
+	}
+
+	if filter.HasNickname(desc.Nickname) {
+		return true
+	}
+
+	return false
 }
 
 // parseDescriptorFile parses the given file and returns a pointer to

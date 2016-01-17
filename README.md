@@ -33,7 +33,7 @@ statuses:
         // Handle error.
     }
 
-    for status := range consensus.Iterate() {
+    for status := range consensus.Iterate(nil) {
         fmt.Println(status)
     }
 
@@ -44,7 +44,7 @@ Similarly, here's how you can parse a file containing server descriptors:
         // Handle error.
     }
 
-    for desc := range descriptors.Iterate() {
+    for desc := range descriptors.Iterate(nil) {
         fmt.Println(desc)
     }
 
