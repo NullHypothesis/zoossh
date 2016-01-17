@@ -128,7 +128,7 @@ func (descs *RouterDescriptors) Iterate(filter *ObjectFilter) <-chan Object {
 	go func() {
 		for _, getDesc := range descs.RouterDescriptors {
 			desc := getDesc()
-			if filter == nil || filter.MatchesRouterDescriptor(desc) {
+			if filter == nil || filter.IsEmpty() || filter.MatchesRouterDescriptor(desc) {
 				ch <- desc
 			}
 		}

@@ -112,7 +112,7 @@ func (c *Consensus) Iterate(filter *ObjectFilter) <-chan Object {
 	go func() {
 		for _, getStatus := range c.RouterStatuses {
 			status := getStatus()
-			if filter == nil || filter.MatchesRouterStatus(status) {
+			if filter == nil || filter.IsEmpty() || filter.MatchesRouterStatus(status) {
 				ch <- status
 			}
 		}

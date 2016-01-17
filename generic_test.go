@@ -68,7 +68,7 @@ func TestInterfaces(t *testing.T) {
 	}
 
 	// Test the Length() function.
-	if consensus.Length() != 6840 {
+	if consensus.Length() != numRouterStatuses {
 		t.Error("Failed to determine consensus length.")
 	}
 
@@ -182,6 +182,22 @@ func TestConsensusFiltering(t *testing.T) {
 	if count != 2 {
 		t.Error("Didn't filter correct amount of relays.")
 	}
+
+	count = 0
+	for _ = range consensus.Iterate(nil) {
+		count++
+	}
+	if count != numRouterStatuses {
+		t.Error("Processed unexpected number of router statuses.")
+	}
+
+	count = 0
+	for _ = range consensus.Iterate(NewObjectFilter()) {
+		count++
+	}
+	if count != numRouterStatuses {
+		t.Error("Processed unexpected number of router statuses.")
+	}
 }
 
 func TestDescriptorFiltering(t *testing.T) {
@@ -204,5 +220,21 @@ func TestDescriptorFiltering(t *testing.T) {
 	}
 	if count != 2 {
 		t.Error("Didn't filter correct amount of relays.")
+	}
+
+	count = 0
+	for _ = range descriptors.Iterate(nil) {
+		count++
+	}
+	if count != numServerDescriptors {
+		t.Error("Processed unexpected number of router descriptors.", count)
+	}
+
+	count = 0
+	for _ = range descriptors.Iterate(NewObjectFilter()) {
+		count++
+	}
+	if count != numServerDescriptors {
+		t.Error("Processed unexpected number of router descriptors.", count)
 	}
 }

@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+// The number of router statuses in our consensus test file.
+const (
+	numRouterStatuses = 6840
+)
+
 // Benchmark the time it takes to parse a consensus file.
 func BenchmarkConsensusParsing(b *testing.B) {
 

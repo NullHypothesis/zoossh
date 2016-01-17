@@ -8,6 +8,12 @@ import (
 	"testing"
 )
 
+// The number of unique fingerprints in the descriptor test file.  The number
+// of total fingerprints is 867, but we don't store duplicates in our map.
+const (
+	numServerDescriptors = 763
+)
+
 // Benchmark the time it takes to parse a server descriptor file.
 func BenchmarkDescriptorParsing(b *testing.B) {
 
