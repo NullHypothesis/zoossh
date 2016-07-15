@@ -143,6 +143,14 @@ func TestParseAnnotation(t *testing.T) {
 	}
 }
 
+// Benchmark the function parseAnnotation().
+func BenchmarkParseAnnotation(b *testing.B) {
+
+	for i := 0; i < b.N; i++ {
+		parseAnnotation("@type server-descriptor 1.0")
+	}
+}
+
 // Test the function GetAnnotation().
 func TestGetAnnotation(t *testing.T) {
 
