@@ -45,6 +45,30 @@ func (a *Annotation) Equals(b *Annotation) bool {
 	return (*a).Type == (*b).Type && (*a).Major == (*b).Major && (*a).Minor == (*b).Minor
 }
 
+// parseAnnotation parses a type annotation string in the form
+// "@type $descriptortype $major.$minor".
+func parseAnnotation(annotationText string) (*Annotation, error) {
+
+	annotation := new(Annotation)
+
+	// We expect "@type TYPE VERSION".
+	words := strings.Split(annotationText, " ")
+	if len(words) != 3 {
+		return nil, fmt.Errorf("bad syntax: %q", annotationText)
+	}
+	annotation.Type = words[1]
+
+	// We expect "MAJOR.MINOR".
+	version := strings.Split(words[2], ".")
+	if len(version) != 2 {
+		return nil, fmt.Errorf("bad syntax: %q", annotationText)
+	}
+	annotation.Major = version[0]
+	annotation.Minor = version[1]
+
+	return annotation, nil
+}
+
 // Decodes the given Base64-encoded string and returns the resulting string.
 // If there are errors during decoding, an error string is returned.
 func Base64ToString(encoded string) (string, error) {
@@ -79,22 +103,10 @@ func GetAnnotation(fileName string) (*Annotation, error) {
 	scanner.Scan()
 	annotationText := scanner.Text()
 
-	annotation := new(Annotation)
-
-	// We expect "@type TYPE VERSION".
-	words := strings.Split(annotationText, " ")
-	if len(words) != 3 {
-		return nil, fmt.Errorf("Could not parse file annotation for \"%s\".", fileName)
+	annotation, err := parseAnnotation(annotationText)
+	if err != nil {
+		return nil, fmt.Errorf("Could not parse file annotation for \"%s\": %s", fileName, err)
 	}
-	annotation.Type = words[1]
-
-	// We expect "MAJOR.MINOR".
-	version := strings.Split(words[2], ".")
-	if len(version) != 2 {
-		return nil, fmt.Errorf("Could not parse file annotation for \"%s\".", fileName)
-	}
-	annotation.Major = version[0]
-	annotation.Minor = version[1]
 
 	return annotation, nil
 }
@@ -120,29 +132,19 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 	// chunks of data.
 	fd.Seek(before+int64(len(annotation)), os.SEEK_SET)
 
-	invalidFormat := fmt.Errorf("Unexpected file annotation: %s", annotation)
-
-	// We expect "@type TYPE VERSION".
-	words := strings.Split(annotation, " ")
-	if len(words) != 3 {
-		return invalidFormat
+	observed, err := parseAnnotation(annotation)
+	if err != nil {
+		return err
 	}
-
-	// We expect "MAJOR.MINOR".
-	version := strings.Split(words[2], ".")
-	if len(version) != 2 {
-		return invalidFormat
-	}
-	observed := Annotation{words[1], version[0], version[1]}
 
 	for annotation, _ := range expected {
 		// We support the observed annotation.
-		if annotation.Equals(&observed) {
+		if annotation.Equals(observed) {
 			return nil
 		}
 	}
 
-	return invalidFormat
+	return fmt.Errorf("Unexpected file annotation: %q", annotation)
 }
 
 // Dissects the given file into string chunks by using the given string
