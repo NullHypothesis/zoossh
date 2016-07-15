@@ -99,6 +99,50 @@ func TestAnnotationEquals(t *testing.T) {
 	}
 }
 
+// Test the function parseAnnotation().
+func TestParseAnnotation(t *testing.T) {
+
+	goodTests := []struct {
+		s        string
+		expected Annotation
+	}{
+		{"@type server-descriptor 1.0", Annotation{"server-descriptor", "1", "0"}},
+		{"@type server-descriptor 1.2", Annotation{"server-descriptor", "1", "2"}},
+		{"@type server-descriptor 2.0", Annotation{"server-descriptor", "2", "0"}},
+		{"@type extra-info 2.0", Annotation{"extra-info", "2", "0"}},
+		{"@type CASE 1.0", Annotation{"CASE", "1", "0"}},
+	}
+	badTests := []string{
+		"",
+		"@type test",
+		"@type 1.0",
+		"@type test 1",
+		"@type test 1.",
+		"@type test .0",
+		"@type test 1.0 more",
+		"@TYPE test 1.0",
+		"@typo test 1.0",
+		"type test 1.0",
+	}
+
+	for _, test := range goodTests {
+		annotation, err := parseAnnotation(test.s)
+		if err != nil {
+			t.Errorf("%q resulted in an error: %s", test.s, err)
+		}
+		if !annotation.Equals(&test.expected) {
+			t.Errorf("%q did not compare equal to %q", test.s, test.expected)
+		}
+	}
+
+	for _, s := range badTests {
+		_, err := parseAnnotation(s)
+		if err == nil {
+			t.Errorf("%q resulted in no error", s)
+		}
+	}
+}
+
 // Test the function GetAnnotation().
 func TestGetAnnotation(t *testing.T) {
 
