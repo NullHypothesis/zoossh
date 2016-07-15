@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -45,26 +46,23 @@ func (a *Annotation) Equals(b *Annotation) bool {
 	return (*a).Type == (*b).Type && (*a).Major == (*b).Major && (*a).Minor == (*b).Minor
 }
 
+// This is the same regexp Stem uses.
+// https://gitweb.torproject.org/stem.git/tree/stem/descriptor/__init__.py?id=1.4.1#n182
+var annotationRegexp = regexp.MustCompile(`^@type (\S+) (\d+)\.(\d+)$`)
+
 // parseAnnotation parses a type annotation string in the form
 // "@type $descriptortype $major.$minor".
 func parseAnnotation(annotationText string) (*Annotation, error) {
 
+	matches := annotationRegexp.FindStringSubmatch(annotationText)
+	if matches == nil {
+		return nil, fmt.Errorf("bad syntax: %q", annotationText)
+	}
+
 	annotation := new(Annotation)
-
-	// We expect "@type TYPE VERSION".
-	words := strings.Split(annotationText, " ")
-	if len(words) != 3 {
-		return nil, fmt.Errorf("bad syntax: %q", annotationText)
-	}
-	annotation.Type = words[1]
-
-	// We expect "MAJOR.MINOR".
-	version := strings.Split(words[2], ".")
-	if len(version) != 2 {
-		return nil, fmt.Errorf("bad syntax: %q", annotationText)
-	}
-	annotation.Major = version[0]
-	annotation.Minor = version[1]
+	annotation.Type = matches[1]
+	annotation.Major = matches[2]
+	annotation.Minor = matches[3]
 
 	return annotation, nil
 }
