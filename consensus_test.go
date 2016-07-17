@@ -18,10 +18,12 @@ const (
 func BenchmarkConsensusParsing(b *testing.B) {
 
 	// Only run this benchmark if the consensus file is there.
-	if _, err := os.Stat(consensusFile); err == nil {
-		for i := 0; i < b.N; i++ {
-			ParseConsensusFile(consensusFile)
-		}
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		b.Skipf("skipping because of missing %s", consensusFile)
+	}
+
+	for i := 0; i < b.N; i++ {
+		ParseConsensusFile(consensusFile)
 	}
 }
 
@@ -29,10 +31,12 @@ func BenchmarkConsensusParsing(b *testing.B) {
 func BenchmarkLConsensusParsing(b *testing.B) {
 
 	// Only run this benchmark if the consensus file is there.
-	if _, err := os.Stat(consensusFile); err == nil {
-		for i := 0; i < b.N; i++ {
-			LazilyParseConsensusFile(consensusFile)
-		}
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		b.Skipf("skipping because of missing %s", consensusFile)
+	}
+
+	for i := 0; i < b.N; i++ {
+		LazilyParseConsensusFile(consensusFile)
 	}
 }
 
@@ -41,12 +45,14 @@ func BenchmarkLConsensusParsing(b *testing.B) {
 func BenchmarkConsensusParsingAndGetting(b *testing.B) {
 
 	// Only run this benchmark if the consensus file is there.
-	if _, err := os.Stat(consensusFile); err == nil {
-		for i := 0; i < b.N; i++ {
-			consensus, _ := ParseConsensusFile(consensusFile)
-			for fingerprint, _ := range consensus.RouterStatuses {
-				consensus.Get(fingerprint)
-			}
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		b.Skipf("skipping because of missing %s", consensusFile)
+	}
+
+	for i := 0; i < b.N; i++ {
+		consensus, _ := ParseConsensusFile(consensusFile)
+		for fingerprint, _ := range consensus.RouterStatuses {
+			consensus.Get(fingerprint)
 		}
 	}
 }
@@ -56,12 +62,14 @@ func BenchmarkConsensusParsingAndGetting(b *testing.B) {
 func BenchmarkLConsensusParsingAndGetting(b *testing.B) {
 
 	// Only run this benchmark if the consensus file is there.
-	if _, err := os.Stat(consensusFile); err == nil {
-		for i := 0; i < b.N; i++ {
-			consensus, _ := LazilyParseConsensusFile(consensusFile)
-			for fingerprint, _ := range consensus.RouterStatuses {
-				consensus.Get(fingerprint)
-			}
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		b.Skipf("skipping because of missing %s", consensusFile)
+	}
+
+	for i := 0; i < b.N; i++ {
+		consensus, _ := LazilyParseConsensusFile(consensusFile)
+		for fingerprint, _ := range consensus.RouterStatuses {
+			consensus.Get(fingerprint)
 		}
 	}
 }
@@ -194,8 +202,8 @@ p reject 1-65535
 func TestExtractMetaInfo(t *testing.T) {
 
 	consensus := NewConsensus()
-	if _, err := os.Stat(consensusFile); err != nil {
-		return
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", consensusFile)
 	}
 
 	fd, err := os.Open(consensusFile)
@@ -217,23 +225,25 @@ func TestExtractMetaInfo(t *testing.T) {
 
 func TestConsensusToSlice(t *testing.T) {
 
-	// Only run this benchmark if the consensus file is there.
-	if _, err := os.Stat(consensusFile); err == nil {
-		consensus, err := ParseConsensusFile(consensusFile)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// Only run this test if the consensus file is there.
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", consensusFile)
+	}
 
-		consensusSlice := consensus.ToSlice()
-		if consensus.Length() != len(consensusSlice) {
-			t.Error("Consensus slice length differs from map length.")
-		}
+	consensus, err := ParseConsensusFile(consensusFile)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		for _, getStatus := range consensusSlice {
-			status := getStatus()
-			if _, found := consensus.Get(status.Fingerprint); !found {
-				t.Error("Router status in slice not found in map.")
-			}
+	consensusSlice := consensus.ToSlice()
+	if consensus.Length() != len(consensusSlice) {
+		t.Error("Consensus slice length differs from map length.")
+	}
+
+	for _, getStatus := range consensusSlice {
+		status := getStatus()
+		if _, found := consensus.Get(status.Fingerprint); !found {
+			t.Error("Router status in slice not found in map.")
 		}
 	}
 }

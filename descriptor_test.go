@@ -18,10 +18,12 @@ const (
 func BenchmarkDescriptorParsing(b *testing.B) {
 
 	// Only run this benchmark if the descriptors file is there.
-	if _, err := os.Stat(serverDescriptorFile); err == nil {
-		for i := 0; i < b.N; i++ {
-			ParseDescriptorFile(serverDescriptorFile)
-		}
+	if _, err := os.Stat(serverDescriptorFile); os.IsNotExist(err) {
+		b.Skipf("skipping because of missing %s", serverDescriptorFile)
+	}
+
+	for i := 0; i < b.N; i++ {
+		ParseDescriptorFile(serverDescriptorFile)
 	}
 }
 
@@ -167,23 +169,25 @@ func TestString(t *testing.T) {
 
 func TestDescriptorsToSlice(t *testing.T) {
 
-	// Only run this benchmark if the descriptors file is there.
-	if _, err := os.Stat(serverDescriptorFile); err == nil {
-		descs, err := ParseDescriptorFile(serverDescriptorFile)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// Only run this test if the descriptors file is there.
+	if _, err := os.Stat(serverDescriptorFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", serverDescriptorFile)
+	}
 
-		descSlice := descs.ToSlice()
-		if descs.Length() != len(descSlice) {
-			t.Error("Descriptor slice length differs from map length.")
-		}
+	descs, err := ParseDescriptorFile(serverDescriptorFile)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		for _, getDesc := range descSlice {
-			desc := getDesc()
-			if _, found := descs.Get(desc.Fingerprint); !found {
-				t.Error("Descriptor in slice not found in map.")
-			}
+	descSlice := descs.ToSlice()
+	if descs.Length() != len(descSlice) {
+		t.Error("Descriptor slice length differs from map length.")
+	}
+
+	for _, getDesc := range descSlice {
+		desc := getDesc()
+		if _, found := descs.Get(desc.Fingerprint); !found {
+			t.Error("Descriptor in slice not found in map.")
 		}
 	}
 }

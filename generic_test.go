@@ -8,20 +8,26 @@ import (
 	"testing"
 )
 
-// Test the function ParseUnknownFile().
-func TestParseUnknownFile(t *testing.T) {
+// Test the function ParseUnknownFile() on the input /dev/zero.
+func TestParseUnknownFileZero(t *testing.T) {
 
 	_, err := ParseUnknownFile("/dev/zero")
 	if err == nil {
 		t.Errorf("ParseUnknownFile() failed to reject /dev/zero.")
 	}
+}
+
+// Test the function ParseUnknownFile().
+func TestParseUnknownFile(t *testing.T) {
 
 	// Only run this test if the consensus file is there.
-	if _, err = os.Stat(consensusFile); err == nil {
-		_, err := ParseUnknownFile(consensusFile)
-		if err != nil {
-			t.Errorf("ParseUnknownFile() failed to parse %s.", consensusFile)
-		}
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", consensusFile)
+	}
+
+	_, err := ParseUnknownFile(consensusFile)
+	if err != nil {
+		t.Errorf("ParseUnknownFile() failed to parse %s.", consensusFile)
 	}
 }
 
@@ -29,12 +35,12 @@ func TestInterfaces(t *testing.T) {
 
 	testFingerprint := Fingerprint("9695DFC35FFEB861329B9F1AB04C46397020CE31")
 
-	if _, err := os.Stat(consensusFile); err != nil {
-		return
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", consensusFile)
 	}
 
-	if _, err := os.Stat(serverDescriptorFile); err != nil {
-		return
+	if _, err := os.Stat(serverDescriptorFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", serverDescriptorFile)
 	}
 
 	consensus, err := ParseUnknownFile(consensusFile)
@@ -163,8 +169,8 @@ func TestFilterGetterSetter(t *testing.T) {
 
 func TestConsensusFiltering(t *testing.T) {
 
-	if _, err := os.Stat(consensusFile); err != nil {
-		return
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", consensusFile)
 	}
 
 	consensus, err := ParseConsensusFile(consensusFile)
@@ -202,8 +208,8 @@ func TestConsensusFiltering(t *testing.T) {
 
 func TestDescriptorFiltering(t *testing.T) {
 
-	if _, err := os.Stat(serverDescriptorFile); err != nil {
-		return
+	if _, err := os.Stat(serverDescriptorFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", serverDescriptorFile)
 	}
 
 	descriptors, err := ParseDescriptorFile(serverDescriptorFile)

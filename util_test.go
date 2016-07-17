@@ -23,10 +23,12 @@ func BenchmarkDescriptorLookup(b *testing.B) {
 	date := time.Date(2014, time.December, 10, 0, 0, 0, 0, time.UTC)
 
 	// Only run this benchmark if the descriptors file is there.
-	if _, err := os.Stat(serverDescriptorDir); err == nil {
-		for i := 0; i < b.N; i++ {
-			LoadDescriptorFromDigest(serverDescriptorDir, digest, date)
-		}
+	if _, err := os.Stat(serverDescriptorDir); os.IsNotExist(err) {
+		b.Skipf("skipping because of missing %s", serverDescriptorDir)
+	}
+
+	for i := 0; i < b.N; i++ {
+		LoadDescriptorFromDigest(serverDescriptorDir, digest, date)
 	}
 }
 
@@ -151,35 +153,48 @@ func BenchmarkParseAnnotation(b *testing.B) {
 	}
 }
 
-// Test the function GetAnnotation().
-func TestGetAnnotation(t *testing.T) {
+// Test the function GetAnnotation() on a server-descriptor input.
+func TestGetAnnotationDescriptor(t *testing.T) {
 
 	expectedDescriptorAnnotation := &Annotation{"server-descriptor", "1", "0"}
-	expectedConsensusAnnotation := &Annotation{"network-status-consensus-3", "1", "0"}
+
+	if _, err := os.Stat(serverDescriptorFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", serverDescriptorFile)
+	}
 
 	// Parse our provided server descriptor file which should work.
-	if _, err := os.Stat(serverDescriptorFile); err == nil {
-		annotation, err := GetAnnotation(serverDescriptorFile)
-		if err != nil {
-			t.Fatalf("GetAnnotation() failed to fetch annotation from \"%s\".", serverDescriptorFile)
-		}
+	annotation, err := GetAnnotation(serverDescriptorFile)
+	if err != nil {
+		t.Fatalf("GetAnnotation() failed to fetch annotation from \"%s\".", serverDescriptorFile)
+	}
 
-		if !annotation.Equals(expectedDescriptorAnnotation) {
-			t.Errorf("Extracted annotation not as expected in \"%s\".", serverDescriptorFile)
-		}
+	if !annotation.Equals(expectedDescriptorAnnotation) {
+		t.Errorf("Extracted annotation not as expected in \"%s\".", serverDescriptorFile)
+	}
+}
+
+// Test the function GetAnnotation() on a network-status-consensus-3 input.
+func TestGetAnnotationConsensus(t *testing.T) {
+
+	expectedConsensusAnnotation := &Annotation{"network-status-consensus-3", "1", "0"}
+
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", consensusFile)
 	}
 
 	// Parse our provided consensus file which should work.
-	if _, err := os.Stat(consensusFile); err == nil {
-		annotation, err := GetAnnotation(consensusFile)
-		if err != nil {
-			t.Fatalf("GetAnnotation() failed to fetch annotation from \"%s\".", consensusFile)
-		}
-
-		if !annotation.Equals(expectedConsensusAnnotation) {
-			t.Errorf("Extracted annotation not as expected in \"%s\".", consensusFile)
-		}
+	annotation, err := GetAnnotation(consensusFile)
+	if err != nil {
+		t.Fatalf("GetAnnotation() failed to fetch annotation from \"%s\".", consensusFile)
 	}
+
+	if !annotation.Equals(expectedConsensusAnnotation) {
+		t.Errorf("Extracted annotation not as expected in \"%s\".", consensusFile)
+	}
+}
+
+// Test the function GetAnnotation() on the input /dev/zero.
+func TestGetAnnotationZero(t *testing.T) {
 
 	// Make sure that a bogus file raises an error.
 	_, err := GetAnnotation("/dev/zero")
@@ -188,10 +203,8 @@ func TestGetAnnotation(t *testing.T) {
 	}
 }
 
-// Test the function CheckAnnotation().
-func TestCheckAnnotation(t *testing.T) {
-
-	var err error
+// Test the function CheckAnnotation() on the input /dev/zero.
+func TestCheckAnnotationZero(t *testing.T) {
 
 	fd, err := os.Open("/dev/zero")
 	if err == nil {
@@ -201,47 +214,57 @@ func TestCheckAnnotation(t *testing.T) {
 		}
 	}
 	defer fd.Close()
+}
+
+// Test the function CheckAnnotation() on a server-descriptor input.
+func TestCheckAnnotationDescriptor(t *testing.T) {
 
 	// Only run this test if the descriptors file is there.
-	if _, err = os.Stat(serverDescriptorFile); err == nil {
-
-		fd, err := os.Open(serverDescriptorFile)
-		if err != nil {
-			return
-		}
-		defer fd.Close()
-
-		err = CheckAnnotation(fd, descriptorAnnotations)
-		if err != nil {
-			t.Error("CheckAnnotation() failed to accept annotation: ", err)
-		}
-		fd.Seek(0, 0)
-
-		err = CheckAnnotation(fd, consensusAnnotations)
-		if err == nil {
-			t.Error("CheckAnnotation() failed to reject annotation.")
-		}
+	if _, err := os.Stat(serverDescriptorFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", serverDescriptorFile)
 	}
 
+	fd, err := os.Open(serverDescriptorFile)
+	if err != nil {
+		return
+	}
+	defer fd.Close()
+
+	err = CheckAnnotation(fd, descriptorAnnotations)
+	if err != nil {
+		t.Error("CheckAnnotation() failed to accept annotation: ", err)
+	}
+	fd.Seek(0, 0)
+
+	err = CheckAnnotation(fd, consensusAnnotations)
+	if err == nil {
+		t.Error("CheckAnnotation() failed to reject annotation.")
+	}
+}
+
+// Test the function CheckAnnotation() on a network-status-consensus-3 input.
+func TestCheckAnnotationConsensus(t *testing.T) {
+
 	// Only run this test if the consensus file is there.
-	if _, err = os.Stat(consensusFile); err == nil {
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", consensusFile)
+	}
 
-		fd, err := os.Open(consensusFile)
-		if err != nil {
-			return
-		}
-		defer fd.Close()
+	fd, err := os.Open(consensusFile)
+	if err != nil {
+		return
+	}
+	defer fd.Close()
 
-		err = CheckAnnotation(fd, consensusAnnotations)
-		if err != nil {
-			t.Error("CheckAnnotation() failed to accept annotation: ", err)
-		}
-		fd.Seek(0, 0)
+	err = CheckAnnotation(fd, consensusAnnotations)
+	if err != nil {
+		t.Error("CheckAnnotation() failed to accept annotation: ", err)
+	}
+	fd.Seek(0, 0)
 
-		err = CheckAnnotation(fd, descriptorAnnotations)
-		if err == nil {
-			t.Error("CheckAnnotation() failed to reject annotation.")
-		}
+	err = CheckAnnotation(fd, descriptorAnnotations)
+	if err == nil {
+		t.Error("CheckAnnotation() failed to reject annotation.")
 	}
 }
 
