@@ -4,7 +4,9 @@ package zoossh
 
 import (
 	"fmt"
+	"io"
 	"net"
+	"os"
 )
 
 // Fingerprint represents a relay's fingerprint as 40 hex digits.
@@ -87,26 +89,46 @@ func NewObjectFilter() *ObjectFilter {
 	}
 }
 
+// parseWithAnnotation parses the input using a parser appropriate for the given
+// annotation.  The input should not have an annotation of its own (it should
+// already have been read).  Returns an error if the annotation is of an unknown
+// type.  Otherwise, returns the output of the chosen parser.
+func parseWithAnnotation(r io.Reader, annotation *Annotation) (ObjectSet, error) {
+
+	// Use the annotation to find the right parser.
+	if _, ok := descriptorAnnotations[*annotation]; ok {
+		return parseDescriptorUnchecked(r, false)
+	}
+
+	if _, ok := consensusAnnotations[*annotation]; ok {
+		return parseConsensusUnchecked(r, false)
+	}
+
+	return nil, fmt.Errorf("Could not find suitable parser.")
+}
+
+// ParseUnknown first reads a type annotation and passes it along with the rest
+// of the input to parseWithAnnotation.
+func ParseUnknown(r io.Reader) (ObjectSet, error) {
+
+	annotation, r, err := readAnnotation(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseWithAnnotation(r, annotation)
+}
+
 // ParseUnknownFile attempts to parse a file whose content we don't know.  We
 // try to use the right parser by looking at the file's annotation.  An
 // ObjectSet is returned if parsing was successful.
 func ParseUnknownFile(fileName string) (ObjectSet, error) {
 
-	// First, get the file's annotation which we then use to figure out what
-	// parser we need.
-	annotation, err := GetAnnotation(fileName)
+	fd, err := os.Open(fileName)
 	if err != nil {
 		return nil, err
 	}
+	defer fd.Close()
 
-	// Now use the annotation to find the right parser.
-	if _, ok := descriptorAnnotations[*annotation]; ok {
-		return ParseDescriptorFile(fileName)
-	}
-
-	if _, ok := consensusAnnotations[*annotation]; ok {
-		return ParseConsensusFile(fileName)
-	}
-
-	return nil, fmt.Errorf("Could not find suitable parser for file %s.", fileName)
+	return ParseUnknown(fd)
 }

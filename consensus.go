@@ -431,6 +431,7 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 
 // extractMetainfo extracts meta information of the open consensus document
 // (such as its validity times) and writes it to the provided consensus struct.
+// It assumes that the type annotation has already been read.
 func extractMetaInfo(r io.Reader, consensus *Consensus) error {
 
 	var err error
@@ -448,7 +449,7 @@ func extractMetaInfo(r io.Reader, consensus *Consensus) error {
 
 	// The given io.Reader points to the beginning of the file.  Skip
 	// lines until we arrive at the consensus times.
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 3; i++ {
 		_, err := br.ReadSlice('\n')
 		if err != nil {
 			return err
@@ -488,11 +489,14 @@ func (filter *ObjectFilter) MatchesRouterStatus(status *RouterStatus) bool {
 	return false
 }
 
-// parseConsensusFile parses the given file and returns a network consensus if
-// parsing was successful.  If there were any errors, an error string is
-// returned.  If the lazy argument is set to true, parsing of the router
-// statuses is delayed until they are accessed.
-func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
+// parseConsensusUnchecked parses a descriptor of type
+// "network-status-consensus-3".  The input should be without a type annotation;
+// i.e., the type annotation should already have been read and checked to be the
+// correct type.  The function returns a network consensus if parsing was
+// successful.  If there were any errors, an error string is returned.  If the
+// lazy argument is set to true, parsing of the router statuses is delayed until
+// they are accessed.
+func parseConsensusUnchecked(r io.Reader, lazy bool) (*Consensus, error) {
 
 	var consensus = NewConsensus()
 	var statusParser func(string) (Fingerprint, GetStatus, error)
@@ -503,33 +507,14 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 		statusParser = ParseRawStatus
 	}
 
-	fd, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-	defer fd.Close()
-
-	err = CheckAnnotation(fd, consensusAnnotations)
-	if err != nil {
-		return nil, err
-	}
-
-	before, err := fd.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return nil, err
-	}
-	err = extractMetaInfo(fd, consensus)
-	if err != nil {
-		return nil, err
-	}
-	_, err = fd.Seek(before, os.SEEK_SET)
+	err := extractMetaInfo(r, consensus)
 	if err != nil {
 		return nil, err
 	}
 
 	// We will read raw router statuses from this channel.
 	queue := make(chan QueueUnit)
-	go DissectFile(fd, extractStatusEntry, queue)
+	go DissectFile(r, extractStatusEntry, queue)
 
 	// Parse incoming router statuses until the channel is closed by the remote
 	// end.
@@ -547,6 +532,32 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 	}
 
 	return consensus, nil
+}
+
+// parseConsensus is a wrapper around parseConsensusUnchecked that first reads
+// and checks the type annotation to make sure it belongs to
+// consensusAnnotations.
+func parseConsensus(r io.Reader, lazy bool) (*Consensus, error) {
+
+	r, err := readAndCheckAnnotation(r, consensusAnnotations)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseConsensusUnchecked(r, lazy)
+}
+
+// parseConsensusFile is a wrapper around parseConsensus that opens the named
+// file for parsing.
+func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
+
+	fd, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	return parseConsensus(fd, lazy)
 }
 
 // LazilyParseConsensusFile parses the given file and returns a network

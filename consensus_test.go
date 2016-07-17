@@ -276,7 +276,12 @@ func TestExtractMetaInfo(t *testing.T) {
 		t.Error(err)
 	}
 
-	extractMetaInfo(fd, consensus)
+	_, r, err := readAnnotation(fd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	extractMetaInfo(r, consensus)
 	if consensus.ValidAfter != time.Date(2014, time.December, 8, 16, 0, 0, 0, time.UTC) {
 		t.Error("ValidAfter time in consensus invalid.")
 	}

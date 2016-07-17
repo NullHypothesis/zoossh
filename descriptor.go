@@ -5,6 +5,7 @@ package zoossh
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -381,11 +382,14 @@ func (filter *ObjectFilter) MatchesRouterDescriptor(desc *RouterDescriptor) bool
 	return false
 }
 
-// parseDescriptorFile parses the given file and returns a pointer to
-// RouterDescriptors containing the router descriptors.  If there were any
-// errors, an error string is returned.  If the lazy argument is set to true,
-// parsing of the router descriptors is delayed until they are accessed.
-func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error) {
+// parseDescriptorUnchecked parses a descriptor of type "server-descriptor".
+// The input should be without a type annotation; i.e., the type annotation
+// should already have been read and checked to be the correct type.  The
+// function returns a pointer to RouterDescriptors containing the router
+// descriptors.  If there were any errors, an error string is returned.  If the
+// lazy argument is set to true, parsing of the router descriptors is delayed
+// until they are accessed.
+func parseDescriptorUnchecked(r io.Reader, lazy bool) (*RouterDescriptors, error) {
 
 	var descriptors = NewRouterDescriptors()
 	var descriptorParser func(descriptor string) (Fingerprint, GetDescriptor, error)
@@ -396,20 +400,9 @@ func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error)
 		descriptorParser = ParseRawDescriptor
 	}
 
-	fd, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-	defer fd.Close()
-
-	err = CheckAnnotation(fd, descriptorAnnotations)
-	if err != nil {
-		return nil, err
-	}
-
 	// We will read raw router descriptors from this channel.
 	queue := make(chan QueueUnit)
-	go DissectFile(fd, extractDescriptor, queue)
+	go DissectFile(r, extractDescriptor, queue)
 
 	// Parse incoming descriptors until the channel is closed by the remote
 	// end.
@@ -427,6 +420,32 @@ func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error)
 	}
 
 	return descriptors, nil
+}
+
+// parseDescriptor is a wrapper around parseDescriptorUnchecked that first reads
+// and checks the type annotation to make sure it belongs to
+// descriptorAnnotations.
+func parseDescriptor(r io.Reader, lazy bool) (*RouterDescriptors, error) {
+
+	r, err := readAndCheckAnnotation(r, descriptorAnnotations)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseDescriptorUnchecked(r, lazy)
+}
+
+// parseDescriptorFile is a wrapper around parseDescriptor that opens the named
+// file for parsing.
+func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error) {
+
+	fd, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	return parseDescriptor(fd, lazy)
 }
 
 // LazilyParseDescriptorFile parses the given file and returns a pointer to
