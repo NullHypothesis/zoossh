@@ -204,6 +204,46 @@ p reject 1-65535
 	}
 }
 
+func TestExtractStatusEntryPadded(t *testing.T) {
+
+	// The initial padding is longer than the first status entry.
+	goodStatusEntry := `paddingpaddingpaddingpaddingpaddingpaddingpadding
+r foo
+number 1
+r bar
+number 2
+directory-signature 5420FD8EA46BD4290F1D07A1883C9D85ECC486C4 CCB7170F6B270B44301712DD7BC04BF9515AF374
+`
+	expected1 := "r foo\nnumber 1\n"
+	expected2 := "r bar\nnumber 2\n"
+
+	s, done, err := extractStatusEntry(goodStatusEntry)
+	if err != nil {
+		t.Error("Failed to extract first entry.", err)
+	}
+
+	if s != expected1 {
+		t.Errorf("Got first entry %q, expected %q.", s, expected1)
+	}
+
+	if done == true {
+		t.Error("Wrongly stated that extraction is done after first entry.")
+	}
+
+	s, done, err = extractStatusEntry(goodStatusEntry)
+	if err != nil {
+		t.Error("Failed to extract second entry.", err)
+	}
+
+	if s != expected2 {
+		t.Errorf("Got second entry %q, expected %q.", s, expected2)
+	}
+
+	if done == true {
+		t.Error("Failed to state that extraction is not yet done.")
+	}
+}
+
 func TestExtractMetaInfo(t *testing.T) {
 
 	consensus := NewConsensus()
