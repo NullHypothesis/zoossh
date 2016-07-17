@@ -84,6 +84,53 @@ func Base64ToString(encoded string) (string, error) {
 	return hex.EncodeToString(decoded), nil
 }
 
+// readAnnotation reads and parses the first line of the the io.Reader, then
+// returns the resulting *Annotation as well as a new io.Reader ready to read
+// the rest of the file.
+func readAnnotation(r io.Reader) (*Annotation, io.Reader, error) {
+
+	br := bufio.NewReader(r)
+
+	// The annotation is placed in the first line of the file.  See the
+	// following URL for details:
+	// <https://collector.torproject.org/formats.html>
+	// Use ReadSlice rather than ReadBytes in order to get ErrBufferFull
+	// when there is no '\n' byte.
+	slice, err := br.ReadSlice('\n')
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Trim the trailing '\n'.
+	line := string(slice[:len(slice)-1])
+	annotation, err := parseAnnotation(line)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return annotation, br, nil
+}
+
+// Checks the type annotation in the given io.Reader.  The Annotation struct
+// determines what we want to see.  If we don't see the expected annotation, an
+// error string is returned.
+func readAndCheckAnnotation(r io.Reader, expected map[Annotation]bool) (io.Reader, error) {
+
+	observed, r, err := readAnnotation(r)
+	if err != nil {
+		return nil, err
+	}
+
+	for annotation, _ := range expected {
+		// We support the observed annotation.
+		if annotation.Equals(observed) {
+			return r, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Unexpected file annotation: %s", observed)
+}
+
 // GetAnnotation obtains and returns the given file's annotation.  If anything
 // fails in the process, an error string is returned.
 func GetAnnotation(fileName string) (*Annotation, error) {
@@ -94,15 +141,9 @@ func GetAnnotation(fileName string) (*Annotation, error) {
 	}
 	defer fd.Close()
 
-	// Fetch the file's first line which should be the annotation.
-
-	scanner := bufio.NewScanner(fd)
-	scanner.Scan()
-	annotationText := scanner.Text()
-
-	annotation, err := parseAnnotation(annotationText)
+	annotation, _, err := readAnnotation(fd)
 	if err != nil {
-		return nil, fmt.Errorf("Could not parse file annotation for \"%s\": %s", fileName, err)
+		return nil, fmt.Errorf("Could not read file annotation for \"%s\": %s", fileName, err)
 	}
 
 	return annotation, nil

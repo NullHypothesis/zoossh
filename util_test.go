@@ -3,6 +3,8 @@
 package zoossh
 
 import (
+	"bytes"
+	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -150,6 +152,34 @@ func BenchmarkParseAnnotation(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		parseAnnotation("@type server-descriptor 1.0")
+	}
+}
+
+// Test the function readAnnotation().
+func TestReadAnnotation(t *testing.T) {
+
+	var expected = "12345678\n"
+	var goodInput = "@type test 1.0\n" + expected
+	var badInput = "bad first line\nmore data\n"
+
+	_, r, err := readAnnotation(bytes.NewBufferString(goodInput))
+	if err != nil {
+		t.Fatalf("%q resulted in an error: %s", goodInput, err)
+	}
+
+	// We should be able to read whatever follows the type annotation.
+	body, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatalf("error reading after type annotation: %s", err)
+	}
+	if !bytes.Equal(body, []byte(expected)) {
+		t.Errorf("got %q, expected %q", body, expected)
+	}
+
+	// A bad annotation should result in an error.
+	_, _, err = readAnnotation(bytes.NewBufferString(badInput))
+	if err == nil {
+		t.Errorf("%q resulted in no error", badInput)
 	}
 }
 
