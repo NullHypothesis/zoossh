@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -430,30 +431,28 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 
 // extractMetainfo extracts meta information of the open consensus document
 // (such as its validity times) and writes it to the provided consensus struct.
-func extractMetaInfo(fd *os.File, consensus *Consensus) error {
+func extractMetaInfo(r io.Reader, consensus *Consensus) error {
 
 	var err error
 
-	before, err := fd.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return err
-	}
-	// Later reset fd position because bufio.Scanner reads ahead.
-	defer fd.Seek(before, os.SEEK_SET)
-
-	scanner := bufio.NewScanner(fd)
+	br := bufio.NewReader(r)
 
 	extractTime := func() (time.Time, error) {
-		scanner.Scan()
-		line := scanner.Text()
-		words := strings.Split(line, " ")
+		line, err := br.ReadSlice('\n')
+		if err != nil {
+			return time.Time{}, err
+		}
+		words := strings.Split(string(line[:len(line)-1]), " ")
 		return time.Parse("2006-01-02 15:04:05", strings.Join(words[1:], " "))
 	}
 
-	// The given file descriptor points to the beginning of the file.  Skip
+	// The given io.Reader points to the beginning of the file.  Skip
 	// lines until we arrive at the consensus times.
 	for i := 0; i < 4; i++ {
-		scanner.Scan()
+		_, err := br.ReadSlice('\n')
+		if err != nil {
+			return err
+		}
 	}
 
 	if consensus.ValidAfter, err = extractTime(); err != nil {
@@ -515,7 +514,15 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 		return nil, err
 	}
 
+	before, err := fd.Seek(0, os.SEEK_CUR)
+	if err != nil {
+		return nil, err
+	}
 	err = extractMetaInfo(fd, consensus)
+	if err != nil {
+		return nil, err
+	}
+	_, err = fd.Seek(before, os.SEEK_SET)
 	if err != nil {
 		return nil, err
 	}
