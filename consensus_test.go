@@ -185,7 +185,7 @@ p reject 1-65535
 		t.Error("Failed to extract valid status entry.", err)
 	}
 
-	if strings.TrimSpace(s) != strings.TrimSpace(goodStatusEntry) {
+	if s != goodStatusEntry {
 		t.Error("Failed to extract correct status entry.")
 	}
 
@@ -193,7 +193,12 @@ p reject 1-65535
 		t.Error("Failed to state that extraction is done.")
 	}
 
-	s, done, err = extractStatusEntry(goodStatusEntry + "\nr foo" + signature)
+	s, done, err = extractStatusEntry(goodStatusEntry + "r foo\n" + signature)
+
+	if s != goodStatusEntry {
+		t.Error("Failed to extract correct status entry.")
+	}
+
 	if done == true {
 		t.Error("Failed to state that extraction is not yet done.")
 	}
