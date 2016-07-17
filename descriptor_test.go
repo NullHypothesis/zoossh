@@ -86,8 +86,7 @@ tWJ53g/ru8Hiy+h9Wa5gI+Eog/z4hj36GBiaTXJoG3M=
 // Test the function extractDescriptor().
 func TestExtractDescriptor(t *testing.T) {
 
-	goodDescriptor := `
-router leenuts 46.14.245.206 9001 0 0
+	goodDescriptor := `router leenuts 46.14.245.206 9001 0 0
 platform Tor 0.2.4.24 on Linux
 protocols Link 1 2 Circuit 1
 published 2014-12-08 14:01:26

@@ -170,8 +170,7 @@ p reject 1-65535`)
 
 func TestExtractStatusEntry(t *testing.T) {
 
-	goodStatusEntry := `
-r seele AAoQ1DAR6kkoo19hBAX5K0QztNw bdrzhG0Kk/8DUsnSdmzj7DjFQjY 2014-12-08 12:27:05 73.15.150.172 9001 0
+	goodStatusEntry := `r seele AAoQ1DAR6kkoo19hBAX5K0QztNw bdrzhG0Kk/8DUsnSdmzj7DjFQjY 2014-12-08 12:27:05 73.15.150.172 9001 0
 s Fast Running Stable Valid
 v Tor 0.2.5.10
 w Bandwidth=18
