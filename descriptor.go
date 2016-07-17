@@ -3,6 +3,7 @@
 package zoossh
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -327,30 +328,37 @@ func ParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, error
 	return descriptor.Fingerprint, func() *RouterDescriptor { return descriptor }, nil
 }
 
-// extractDescriptor extracts the first server descriptor from the given string
-// blurb.  If successful, it returns the descriptor as a string and true or
-// false, depending on if it extracted the last descriptor in the string blurb
-// or not.
-func extractDescriptor(blurb string) (string, bool, error) {
+// extractDescriptor is a bufio.SplitFunc that extracts individual router
+// descriptors.
+func extractDescriptor(data []byte, atEOF bool) (advance int, token []byte, err error) {
 
-	start := strings.Index(blurb, "\nrouter ")
-	if start == -1 {
-		return "", false, fmt.Errorf("Cannot find beginning of descriptor: \"\\nrouter \"")
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
 	}
 
-	marker := "\n-----END SIGNATURE-----\n"
-	end := strings.Index(blurb[start:], marker)
-	if end == -1 {
-		return "", false, fmt.Errorf("Cannot find end of descriptor: \"\\n-----END SIGNATURE-----\\n\"")
+	start := 0
+	if !bytes.HasPrefix(data, []byte("router ")) {
+		start = bytes.Index(data, []byte("\nrouter "))
+		if start < 0 {
+			if atEOF {
+				return 0, nil, fmt.Errorf("Cannot find beginning of descriptor: \"\\nrouter \"")
+			}
+			// Request more data.
+			return 0, nil, nil
+		}
+		start += 1
 	}
 
-	// Are we at the end?
-	done := false
-	if len(blurb) == (start + end + len(marker)) {
-		done = true
+	marker := []byte("\n-----END SIGNATURE-----\n")
+	end := bytes.Index(data[start:], marker)
+	if end >= 0 {
+		return start + end + len(marker), data[start : start+end+len(marker)], nil
 	}
-
-	return blurb[start : start+end+len(marker)], done, nil
+	if atEOF {
+		return start, nil, fmt.Errorf("Cannot find end of descriptor: %q", marker)
+	}
+	// Request more data.
+	return start, nil, nil
 }
 
 // MatchesRouterDescriptor returns true if fields of the given router

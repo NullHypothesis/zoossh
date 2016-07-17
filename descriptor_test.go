@@ -3,6 +3,7 @@
 package zoossh
 
 import (
+	"bufio"
 	"os"
 	"strings"
 	"testing"
@@ -118,27 +119,68 @@ Oa5fhjBu72rul97Aa4bJPZKa+RJNCGUKJuFGoAlZV7I=
 -----END SIGNATURE-----
 `
 
-	s, done, err := extractDescriptor("foo" + goodDescriptor)
-	if err != nil {
-		t.Error("Failed to extract good server descriptor.")
+	scanner := bufio.NewScanner(strings.NewReader(goodDescriptor))
+	scanner.Split(extractDescriptor)
+
+	if !scanner.Scan() {
+		t.Fatal("Failed to extract good server descriptor.")
 	}
+	if err := scanner.Err(); err != nil {
+		t.Error("Error extracting server descriptor.", err)
+	}
+	s := scanner.Text()
 
 	if strings.TrimSpace(s) != strings.TrimSpace(goodDescriptor) {
 		t.Error("Failed to extract correct server descriptor.")
 	}
 
-	if done != true {
+	if scanner.Scan() {
 		t.Error("Failed to state that extraction was done.")
 	}
 
-	s, done, err = extractDescriptor(goodDescriptor + "foo")
-	if done != false {
-		t.Error("Failed to state that extraction was not done.")
+	scanner = bufio.NewScanner(strings.NewReader("foo\n" + goodDescriptor))
+	scanner.Split(extractDescriptor)
+
+	if !scanner.Scan() {
+		t.Fatal("Failed to extract good server descriptor.")
+	}
+	if err := scanner.Err(); err != nil {
+		t.Error("Error extracting server descriptor.", err)
+	}
+	s = scanner.Text()
+
+	if strings.TrimSpace(s) != strings.TrimSpace(goodDescriptor) {
+		t.Error("Failed to extract correct server descriptor.")
 	}
 
-	s, done, err = extractDescriptor(goodDescriptor[:1136])
-	if err == nil {
-		t.Error("Failed to reject incomplete server descriptor.")
+	if scanner.Scan() {
+		t.Error("Failed to state that extraction was done.")
+	}
+
+	scanner = bufio.NewScanner(strings.NewReader(goodDescriptor + "foo"))
+	scanner.Split(extractDescriptor)
+
+	if !scanner.Scan() {
+		t.Fatal("Failed to extract good server descriptor.")
+	}
+	if err := scanner.Err(); err != nil {
+		t.Error("Error extracting server descriptor.", err)
+	}
+	s = scanner.Text()
+
+	if strings.TrimSpace(s) != strings.TrimSpace(goodDescriptor) {
+		t.Error("Failed to extract correct server descriptor.")
+	}
+
+	if scanner.Scan() {
+		t.Error("Failed to state that extraction was done.")
+	}
+
+	scanner = bufio.NewScanner(strings.NewReader(goodDescriptor[:1136]))
+	scanner.Split(extractDescriptor)
+
+	if scanner.Scan() || scanner.Err() == nil {
+		t.Fatal("Failed to reject incomplete server descriptor.")
 	}
 }
 

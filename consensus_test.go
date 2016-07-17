@@ -3,6 +3,7 @@
 package zoossh
 
 import (
+	"bufio"
 	"os"
 	"strings"
 	"testing"
@@ -179,26 +180,41 @@ p reject 1-65535
 
 	signature := "directory-signature 5420FD8EA46BD4290F1D07A1883C9D85ECC486C4 CCB7170F6B270B44301712DD7BC04BF9515AF374"
 
-	s, done, err := extractStatusEntry(goodStatusEntry + signature)
-	if err != nil {
-		t.Error("Failed to extract valid status entry.", err)
+	scanner := bufio.NewScanner(strings.NewReader(goodStatusEntry + signature))
+	scanner.Split(extractStatusEntry)
+
+	if !scanner.Scan() {
+		t.Fatal("Failed to extract valid status entry.")
 	}
+	if err := scanner.Err(); err != nil {
+		t.Error("Error extracting status entry.", err)
+	}
+	s := scanner.Text()
 
 	if s != goodStatusEntry {
 		t.Error("Failed to extract correct status entry.")
 	}
 
-	if done != true {
+	if scanner.Scan() {
 		t.Error("Failed to state that extraction is done.")
 	}
 
-	s, done, err = extractStatusEntry(goodStatusEntry + "r foo\n" + signature)
+	scanner = bufio.NewScanner(strings.NewReader(goodStatusEntry + "r foo\n" + signature))
+	scanner.Split(extractStatusEntry)
+
+	if !scanner.Scan() {
+		t.Fatal("Failed to extract valid status entry.")
+	}
+	if err := scanner.Err(); err != nil {
+		t.Error("Error extracting status entry.", err)
+	}
+	s = scanner.Text()
 
 	if s != goodStatusEntry {
 		t.Error("Failed to extract correct status entry.")
 	}
 
-	if done == true {
+	if !scanner.Scan() {
 		t.Error("Failed to state that extraction is not yet done.")
 	}
 }
@@ -216,29 +232,34 @@ directory-signature 5420FD8EA46BD4290F1D07A1883C9D85ECC486C4 CCB7170F6B270B44301
 	expected1 := "r foo\nnumber 1\n"
 	expected2 := "r bar\nnumber 2\n"
 
-	s, done, err := extractStatusEntry(goodStatusEntry)
-	if err != nil {
-		t.Error("Failed to extract first entry.", err)
+	scanner := bufio.NewScanner(strings.NewReader(goodStatusEntry))
+	scanner.Split(extractStatusEntry)
+
+	if !scanner.Scan() {
+		t.Error("Failed to extract first entry.")
 	}
+	if err := scanner.Err(); err != nil {
+		t.Error("Error extracting first entry.", err)
+	}
+	s := scanner.Text()
 
 	if s != expected1 {
 		t.Errorf("Got first entry %q, expected %q.", s, expected1)
 	}
 
-	if done == true {
-		t.Error("Wrongly stated that extraction is done after first entry.")
+	if !scanner.Scan() {
+		t.Error("Failed to extract second entry.")
 	}
-
-	s, done, err = extractStatusEntry(goodStatusEntry)
-	if err != nil {
-		t.Error("Failed to extract second entry.", err)
+	if err := scanner.Err(); err != nil {
+		t.Error("Error extracting second entry.", err)
 	}
+	s = scanner.Text()
 
 	if s != expected2 {
 		t.Errorf("Got second entry %q, expected %q.", s, expected2)
 	}
 
-	if done == true {
+	if scanner.Scan() {
 		t.Error("Failed to state that extraction is not yet done.")
 	}
 }

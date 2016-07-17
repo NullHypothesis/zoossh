@@ -4,6 +4,7 @@ package zoossh
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -389,27 +390,42 @@ func ParseRawStatus(rawStatus string) (Fingerprint, GetStatus, error) {
 	return status.Fingerprint, func() *RouterStatus { return status }, nil
 }
 
-// extractStatusEntry extracts the first network status entry from the given
-// string blurb.  If successful, it returns the status entry as a string and
-// true or false, depending on if it extracted the last entry in the string
-// blurb or not.
-func extractStatusEntry(blurb string) (string, bool, error) {
+// extractStatusEntry is a bufio.SplitFunc that extracts individual network
+// status entries.
+func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err error) {
 
-	start := strings.Index(blurb, "\nr ")
-	if start == -1 {
-		return "", false, fmt.Errorf("Cannot find beginning of status entry: \"\\nr \"")
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
 	}
 
-	end := strings.Index(blurb[start+1:], "\nr ")
-	if end == -1 {
-		end := strings.Index(blurb[start+1:], "directory-signature")
-		if end == -1 {
-			return "", false, fmt.Errorf("Cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
+	start := 0
+	if !bytes.HasPrefix(data, []byte("r ")) {
+		start = bytes.Index(data, []byte("\nr "))
+		if start < 0 {
+			if atEOF {
+				return 0, nil, fmt.Errorf("Cannot find beginning of status entry: \"\\nr \"")
+			}
+			// Request more data.
+			return 0, nil, nil
 		}
-		return blurb[start+1 : start+1+end], true, nil
+		start += 1
 	}
 
-	return blurb[start+1 : start+1+end], false, nil
+	end := bytes.Index(data[start:], []byte("\nr "))
+	if end >= 0 {
+		return start + end + 1, data[start : start+end+1], nil
+	}
+	end = bytes.Index(data[start:], []byte("directory-signature"))
+	if end >= 0 {
+		// "directory-signature" means this is the last status; stop
+		// scanning.
+		return start + end, data[start : start+end], bufio.ErrFinalToken
+	}
+	if atEOF {
+		return start, nil, fmt.Errorf("Cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
+	}
+	// Request more data.
+	return 0, nil, nil
 }
 
 // extractMetainfo extracts meta information of the open consensus document

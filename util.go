@@ -7,8 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -148,30 +146,20 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 // Dissects the given file into string chunks by using the given string
 // extraction function.  The resulting string chunks are then written to the
 // given queue where the receiving end parses them.
-func DissectFile(fd *os.File, extractor StringExtractor, queue chan QueueUnit) {
+func DissectFile(fd *os.File, extractor bufio.SplitFunc, queue chan QueueUnit) {
 
 	defer close(queue)
 
-	blurb, err := ioutil.ReadAll(fd)
-	if err != nil {
-		queue <- QueueUnit{"", err}
+	scanner := bufio.NewScanner(fd)
+	scanner.Split(extractor)
+
+	for scanner.Scan() {
+		unit := scanner.Text()
+		queue <- QueueUnit{unit, nil}
 	}
 
-	rawContent := string(blurb)
-
-	for {
-		unit, done, err := extractor(rawContent)
-		if err != nil {
-			log.Println("Error in extraction function: ", err)
-			break
-		}
-
-		queue <- QueueUnit{unit, nil}
-		rawContent = rawContent[len(unit):]
-
-		if done {
-			break
-		}
+	if err := scanner.Err(); err != nil {
+		queue <- QueueUnit{"", err}
 	}
 }
 
