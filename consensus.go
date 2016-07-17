@@ -406,10 +406,10 @@ func extractStatusEntry(blurb string) (string, bool, error) {
 		if end == -1 {
 			return "", false, fmt.Errorf("Cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
 		}
-		return blurb[start : start+end], true, nil
+		return blurb[start+1 : start+1+end], true, nil
 	}
 
-	return blurb[start : start+end], false, nil
+	return blurb[start+1 : start+1+end], false, nil
 }
 
 // extractMetainfo extracts meta information of the open consensus document
