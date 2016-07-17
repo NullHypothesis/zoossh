@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -146,11 +147,11 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 // Dissects the given file into string chunks by using the given string
 // extraction function.  The resulting string chunks are then written to the
 // given queue where the receiving end parses them.
-func DissectFile(fd *os.File, extractor bufio.SplitFunc, queue chan QueueUnit) {
+func DissectFile(r io.Reader, extractor bufio.SplitFunc, queue chan QueueUnit) {
 
 	defer close(queue)
 
-	scanner := bufio.NewScanner(fd)
+	scanner := bufio.NewScanner(r)
 	scanner.Split(extractor)
 
 	for scanner.Scan() {
