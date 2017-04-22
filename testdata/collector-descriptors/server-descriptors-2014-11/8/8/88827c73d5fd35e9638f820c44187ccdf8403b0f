@@ -1,0 +1,31 @@
+@type server-descriptor 1.0
+router Karlstad2 81.170.149.212 9001 0 0
+platform Tor 0.2.3.25 on Linux
+opt protocols Link 1 2 Circuit 1
+published 2014-11-20 18:35:53
+opt fingerprint 7BD8 4CB6 3845 E0D6 1C1C FA83 914A 1B8C 9684 82B1
+uptime 923
+bandwidth 1048576 1048576 61365
+opt extra-info-digest A253004CD5E3A0A887558F5DB03D6A532CA64E50
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAKlyhZ191vJzYMbpE1+zVyGSzQ2EjdxTKZzAix4K5875sBYoCkrcYfgb
+XKWT/S7wI/sv8DcN46wR36GEVkRQcJrXt0DeULWKY66csTBmkIQteg8gSs3aEHxQ
+oWs4DyKzruPrKWAmlTZpH03qVs+mKIMxaDTdY/Yjak5vNbsYyCaTAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAJmK+lwJsFXNYYxDypQ++DFffXqmAOi+46es5lDk/kSHHYgxyWrWAMbr
+qgyvgaztJAIId10muvST45y5o1QN/RSXeU3OKCyWak35YKk1qBFzHVmSe6akcJlI
+dfbmx72dGV3I/oYVm9tulC+MiMeoXWCKDB12thVZwYIWAMa84Ie9AgMBAAE=
+-----END RSA PUBLIC KEY-----
+family $4B02D7D5EBAB397B7B972055CCA0DE60684A0884 $9B94CD0B7B8057EAF21BA7F023B7A1C8CA9CE645 $CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912
+opt hidden-service-dir
+contact 4096R/D7FDC0D0 Philipp Winter <philwint@kau.se>
+reject *:*
+router-signature
+-----BEGIN SIGNATURE-----
+hnftedvfvN9pOzLWT4siD4+gvGwtdHUG87KJqeack6jzq/1PvGyZ/iNH6GYxiXxI
+so4p3ieWS/bA4v4xe2lB7exuIjEDGvuaoqeiPepmZXSQYc2aTixPDZCX5+qJUu3p
+zuCzg0JkIR92X/ryzJ5IbuVQVJQwwWkZNYMhcPEBwWA=
+-----END SIGNATURE-----
