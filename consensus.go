@@ -5,6 +5,7 @@ package zoossh
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -72,6 +73,10 @@ type Consensus struct {
 	ValidAfter time.Time
 	FreshUntil time.Time
 	ValidUntil time.Time
+
+	// Shared randomness
+	SharedRandPrevious []byte
+	SharedRandCurrent  []byte
 
 	// A map from relay fingerprint to a function which returns the relay
 	// status.
@@ -485,6 +490,33 @@ func extractMetaInfo(r io.Reader, c *Consensus) error {
 	c.ValidUntil, err = parseTime(c.MetaInfo["valid-until"])
 	if err != nil {
 		return err
+	}
+
+	// Reads a shared-rand line from the consensus and returns decoded bytes.
+	parseRand := func(line []byte) ([]byte, error) {
+		split := bytes.SplitN(line, []byte(" "), 2)
+		if len(split) != 2 {
+			return nil, errors.New("malformed shared random line")
+		}
+		// should split to (vote count, b64 bytes)
+		_, rand := split[0], split[1]
+		return base64.StdEncoding.DecodeString(string(rand))
+	}
+
+	// Only the newer consensus documents have these values.
+	if line, ok := c.MetaInfo["shared-rand-previous-value"]; ok {
+		val, err := parseRand(line)
+		if err != nil {
+			return err
+		}
+		c.SharedRandPrevious = val
+	}
+	if line, ok := c.MetaInfo["shared-rand-current-value"]; ok {
+		val, err := parseRand(line)
+		if err != nil {
+			return err
+		}
+		c.SharedRandCurrent = val
 	}
 
 	return nil
