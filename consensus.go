@@ -5,6 +5,8 @@ package zoossh
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -64,11 +66,17 @@ type RouterStatus struct {
 }
 
 type Consensus struct {
+	// Generic map of consensus metadata
+	MetaInfo map[string][]byte
 
-	// Consensus meta information.
+	// Document validity period
 	ValidAfter time.Time
 	FreshUntil time.Time
 	ValidUntil time.Time
+
+	// Shared randomness
+	SharedRandPrevious []byte
+	SharedRandCurrent  []byte
 
 	// A map from relay fingerprint to a function which returns the relay
 	// status.
@@ -432,38 +440,83 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 // extractMetainfo extracts meta information of the open consensus document
 // (such as its validity times) and writes it to the provided consensus struct.
 // It assumes that the type annotation has already been read.
-func extractMetaInfo(r io.Reader, consensus *Consensus) error {
+func extractMetaInfo(r io.Reader, c *Consensus) error {
 
 	var err error
 
 	br := bufio.NewReader(r)
+	c.MetaInfo = make(map[string][]byte)
 
-	extractTime := func() (time.Time, error) {
-		line, err := br.ReadSlice('\n')
-		if err != nil {
-			return time.Time{}, err
-		}
-		words := strings.Split(string(line[:len(line)-1]), " ")
-		return time.Parse("2006-01-02 15:04:05", strings.Join(words[1:], " "))
-	}
-
-	// The given io.Reader points to the beginning of the file.  Skip
-	// lines until we arrive at the consensus times.
-	for i := 0; i < 3; i++ {
-		_, err := br.ReadSlice('\n')
+	// Read the initial metadata. We'll later extract information of particular
+	// interest by name. The weird Reader loop is because scanner reads too much.
+	for line, err := br.ReadSlice('\n'); ; line, err = br.ReadSlice('\n') {
 		if err != nil {
 			return err
 		}
+
+		// splits to (key, value)
+		split := bytes.SplitN(line, []byte(" "), 2)
+		if len(split) != 2 {
+			return errors.New("malformed metainfo line")
+		}
+
+		key := string(split[0])
+		c.MetaInfo[key] = bytes.TrimSpace(split[1])
+
+		// Look ahead to check if we've reached the end of the unique keys.
+		nextKey, err := br.Peek(10)
+		if err != nil {
+			return err
+		}
+		if bytes.Equal(nextKey, []byte("dir-source")) {
+			break
+		}
 	}
 
-	if consensus.ValidAfter, err = extractTime(); err != nil {
+	// Define a parser for validity timestamps
+	parseTime := func(line []byte) (time.Time, error) {
+		return time.Parse("2006-01-02 15:04:05", string(line))
+	}
+
+	// Extract the validity period of this consensus
+	c.ValidAfter, err = parseTime(c.MetaInfo["valid-after"])
+	if err != nil {
 		return err
 	}
-	if consensus.FreshUntil, err = extractTime(); err != nil {
+	c.FreshUntil, err = parseTime(c.MetaInfo["fresh-until"])
+	if err != nil {
 		return err
 	}
-	if consensus.ValidUntil, err = extractTime(); err != nil {
+	c.ValidUntil, err = parseTime(c.MetaInfo["valid-until"])
+	if err != nil {
 		return err
+	}
+
+	// Reads a shared-rand line from the consensus and returns decoded bytes.
+	parseRand := func(line []byte) ([]byte, error) {
+		split := bytes.SplitN(line, []byte(" "), 2)
+		if len(split) != 2 {
+			return nil, errors.New("malformed shared random line")
+		}
+		// should split to (vote count, b64 bytes)
+		_, rand := split[0], split[1]
+		return base64.StdEncoding.DecodeString(string(rand))
+	}
+
+	// Only the newer consensus documents have these values.
+	if line, ok := c.MetaInfo["shared-rand-previous-value"]; ok {
+		val, err := parseRand(line)
+		if err != nil {
+			return err
+		}
+		c.SharedRandPrevious = val
+	}
+	if line, ok := c.MetaInfo["shared-rand-current-value"]; ok {
+		val, err := parseRand(line)
+		if err != nil {
+			return err
+		}
+		c.SharedRandCurrent = val
 	}
 
 	return nil

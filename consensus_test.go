@@ -4,6 +4,7 @@ package zoossh
 
 import (
 	"bufio"
+	"encoding/base64"
 	"os"
 	"strings"
 	"testing"
@@ -290,6 +291,45 @@ func TestExtractMetaInfo(t *testing.T) {
 	}
 	if consensus.ValidUntil != time.Date(2014, time.December, 8, 19, 0, 0, 0, time.UTC) {
 		t.Error("ValidUntil time in consensus invalid.")
+	}
+}
+
+func TestExtractSharedRandom(t *testing.T) {
+	expectedPrev := "CMiqEw+6Dsot433qR+5WOEcDABGgJDbFozSFmudJlRg="
+	expectedCurr := "bf6tbPKCMgt2fHCUcJ2FqKLtM6EER3E5uu4CVtE2erg="
+
+	c := NewConsensus()
+	if _, err := os.Stat(sharedRandConsensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", sharedRandConsensusFile)
+	}
+
+	fd, err := os.Open(sharedRandConsensusFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fd.Close()
+
+	_, r, err := readAnnotation(fd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = extractMetaInfo(r, c)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if c.SharedRandPrevious == nil || c.SharedRandCurrent == nil {
+		t.Error("no shared-rand in parsed consensus")
+	}
+
+	encodedPrev := base64.StdEncoding.EncodeToString(c.SharedRandPrevious)
+	if encodedPrev != expectedPrev {
+		t.Error("previous random value did not match expected value")
+	}
+	encodedCurr := base64.StdEncoding.EncodeToString(c.SharedRandCurrent)
+	if encodedCurr != expectedCurr {
+		t.Error("current random value did not match expected value")
 	}
 }
 

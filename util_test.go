@@ -13,9 +13,12 @@ import (
 // Run the file "setup_tests.sh" in the scripts/ directory to obtain these
 // files.
 const (
-	serverDescriptorDir  = "/tmp/collector-descriptors/"
-	serverDescriptorFile = "/tmp/server-descriptors"
-	consensusFile        = "/tmp/consensus"
+	serverDescriptorDir  = "testdata/collector-descriptors/"
+	serverDescriptorFile = "testdata/server-descriptors"
+	consensusFile        = "testdata/consensus"
+
+	// a newer consensus document that has shared-rand lines
+	sharedRandConsensusFile = "testdata/2017-04-15-00-00-00-consensus"
 )
 
 // Benchmark the time it takes to look up a descriptor.
