@@ -161,7 +161,7 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 
 	// The annotation is placed in the first line of the file.  See the
 	// following URL for details:
-	// <https://collector.torproject.org/formats.html>
+	// <https://metrics.torproject.org/collector.html#data-formats>
 	scanner := bufio.NewScanner(fd)
 	scanner.Scan()
 	annotation := scanner.Text()

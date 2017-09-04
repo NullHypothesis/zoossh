@@ -19,7 +19,7 @@ Zoossh partially supports the following two file formats:
 * Network status consensuses (`@type network-status-consensus-3 1.0`)
 
 For more information about file formats, have a look at
-[CollecTor](https://collector.torproject.org/#data-formats).
+[CollecTor](https://metrics.torproject.org/collector.html#data-formats).
 
 Examples
 --------
