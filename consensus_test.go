@@ -100,7 +100,7 @@ func TestConsensusOperations(t *testing.T) {
 		t.Error("Could not retrieve fingerprint which should be available.")
 	}
 
-	if status.ORPort != 0 {
+	if status.Address.IPv4ORPort != 0 {
 		t.Error("Field ORPort should be 0.")
 	}
 
@@ -121,6 +121,7 @@ func TestStatusParsing(t *testing.T) {
 func TestConsensusSetOperations(t *testing.T) {
 
 	fingerprint0, getStatus0, err := ParseRawStatus(`r Karlstad0 m5TNC3uAV+ryG6fwI7ehyMqc5kU f1g9KQhgS0r6+H/7dzAJOpi6lG8 2014-12-08 06:57:54 193.11.166.194 9000 80
+a [2002:470:6e:80d::2]:22
 s Fast Guard HSDir Running Stable V2Dir Valid
 v Tor 0.2.4.23
 w Bandwidth=2670
@@ -130,6 +131,7 @@ p reject 1-65535`)
 	}
 
 	fingerprint1, getStatus1, err := ParseRawStatus(`r Karlstad1 zO8CqkVMCrD+GsaDBPbYxCIMGRI pR21zIq4gZQmZOj2FvRwNO5U+K0 2014-12-08 06:57:49 193.11.166.194 9001 0
+a [2a02:2430:3:2500::5fa3:1ef5]:9001
 s Fast Guard Running Stable Valid
 v Tor 0.2.4.23
 w Bandwidth=2290
@@ -139,6 +141,7 @@ p reject 1-65535`)
 	}
 
 	fingerprint2, getStatus2, err := ParseRawStatus(`r Karlstad2 e9hMtjhF4NYcHPqDkUobjJaEgrE eu8/9NajsgwD6+/vlObfyk2bZjo 2014-12-08 12:24:43 81.170.149.212 9001 0
+a [2a02:418:1007:b::48]:443
 s Fast Running Stable Valid
 v Tor 0.2.3.25
 w Bandwidth=778
@@ -151,7 +154,7 @@ p reject 1-65535`)
 		t.Error("Unexpected fingerprint for router status.")
 	}
 
-	if getStatus1().ORPort != 9001 {
+	if getStatus1().Address.IPv4ORPort != 9001 {
 		t.Error("Unexpected ORPort.")
 	}
 
@@ -355,5 +358,56 @@ func TestConsensusToSlice(t *testing.T) {
 		if _, found := consensus.Get(status.Fingerprint); !found {
 			t.Error("Router status in slice not found in map.")
 		}
+	}
+}
+
+func TestParseIPv6AddressAndPort(t *testing.T) {
+
+	_, getStatus, err := ParseRawStatus(`r Karlstad0 m5TNC3uAV+ryG6fwI7ehyMqc5kU f1g9KQhgS0r6+H/7dzAJOpi6lG8 2014-12-08 06:57:54 193.11.166.194 9000 80
+a [2002:470:6e:80d::2]:22
+s Fast Guard HSDir Running Stable V2Dir Valid
+v Tor 0.2.4.23
+w Bandwidth=2670
+p reject 1-65535`)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if getStatus().Address.IPv6Address.String() != "2002:470:6e:80d::2" {
+		t.Error("Failes to Parse IPv6 Address correctly.")
+	}
+
+	if getStatus().Address.IPv6ORPort != StringToPort("22") {
+		t.Error("Failes to Parse IPv6 Port correctly.")
+	}
+}
+
+func TestPrintIPv6AddressAndPort(t *testing.T) {
+
+	_, getStatus0, err := ParseRawStatus(`r Karlstad0 m5TNC3uAV+ryG6fwI7ehyMqc5kU f1g9KQhgS0r6+H/7dzAJOpi6lG8 2014-12-08 06:57:54 193.11.166.194 9000 80
+a [2002:470:6e:80d::2]:22
+s Fast Guard HSDir Running Stable V2Dir Valid
+v Tor 0.2.4.23
+w Bandwidth=2670
+p reject 1-65535`)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if getStatus0().Address.String() != "193.11.166.194|9000|80,2002:470:6e:80d::2|22" {
+		t.Error("Failed to pretty print IP addresses", getStatus0().Address.String())
+	}
+
+	_, getStatus1, err := ParseRawStatus(`r Karlstad0 m5TNC3uAV+ryG6fwI7ehyMqc5kU f1g9KQhgS0r6+H/7dzAJOpi6lG8 2014-12-08 06:57:54 193.11.166.194 9000 80
+s Fast Guard HSDir Running Stable V2Dir Valid
+v Tor 0.2.4.23
+w Bandwidth=2670
+p reject 1-65535`)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if getStatus1().Address.String() != "193.11.166.194|9000|80" {
+		t.Error("Failed to pretty print IP addresses", getStatus1().Address.String())
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -38,6 +39,15 @@ type RouterFlags struct {
 	V2Dir     bool
 }
 
+type RouterAddress struct {
+	IPv4Address net.IP
+	IPv4ORPort  uint16
+	IPv4DirPort uint16
+
+	IPv6Address net.IP
+	IPv6ORPort  uint16
+}
+
 type RouterStatus struct {
 
 	// The single fields of an "r" line.
@@ -45,9 +55,9 @@ type RouterStatus struct {
 	Fingerprint Fingerprint
 	Digest      string
 	Publication time.Time
-	Address     net.IP
-	ORPort      uint16
-	DirPort     uint16
+
+	// The IPv4 and IPv6 fields of "a" line
+	Address RouterAddress
 
 	// The single fields of an "s" line.
 	Flags RouterFlags
@@ -87,12 +97,10 @@ type Consensus struct {
 // the status' string representation.
 func (s *RouterStatus) String() string {
 
-	return fmt.Sprintf("%s,%s,%s,%d,%d,%s,%s,%s",
+	return fmt.Sprintf("%s,%s,%+v,%s,%s,%s",
 		s.Fingerprint,
 		s.Nickname,
 		s.Address,
-		s.ORPort,
-		s.DirPort,
 		s.Flags,
 		s.Publication.Format(time.RFC3339),
 		strings.Replace(s.TorVersion, ",", "", -1))
@@ -233,6 +241,29 @@ func (a *Consensus) Intersect(b *Consensus) *Consensus {
 }
 
 // Implement the Stringer interface for pretty printing.
+func (address RouterAddress) String() string {
+	var ipV4stringAddress []string
+	var ipV6stringAddress []string
+
+	if address.IPv4Address != nil {
+		ipV4stringAddress = append(ipV4stringAddress, address.IPv4Address.String())
+	}
+	ipV4stringAddress = append(ipV4stringAddress, fmt.Sprintf("%v", address.IPv4ORPort))
+	ipV4stringAddress = append(ipV4stringAddress, fmt.Sprintf("%v", address.IPv4DirPort))
+	ipV4Join := fmt.Sprintf(strings.Join(ipV4stringAddress, "|"))
+
+	if address.IPv6Address == nil {
+		return ipV4Join
+	}
+
+	ipV6stringAddress = append(ipV6stringAddress, address.IPv6Address.String())
+	ipV6stringAddress = append(ipV6stringAddress, fmt.Sprintf("%v", address.IPv6ORPort))
+
+	ipV6Join := fmt.Sprintf(strings.Join(ipV6stringAddress, "|"))
+	return ipV4Join + "," + ipV6Join
+}
+
+// Implement the Stringer interface for pretty printing.
 func (flags RouterFlags) String() string {
 
 	var stringFlags []string
@@ -313,6 +344,15 @@ func parseRouterFlags(flags []string) *RouterFlags {
 	return routerFlags
 }
 
+func parseIPv6AddressAndPort(addressAndPort string) (address net.IP, port uint16) {
+	var ipV6regex = regexp.MustCompile(`\[(.*?)\]`)
+	var ipV6portRegex = regexp.MustCompile(`\]:(.*)`)
+	address = net.ParseIP(ipV6regex.FindStringSubmatch(addressAndPort)[1])
+	port = StringToPort(ipV6portRegex.FindStringSubmatch(addressAndPort)[1])
+
+	return address, port
+}
+
 // LazyParseRawStatus parses a raw router status (in string format) and returns
 // the router's fingerprint, a function which returns a RouterStatus, and an
 // error if there were any during parsing.  Parsing of the given string is
@@ -371,9 +411,12 @@ func ParseRawStatus(rawStatus string) (Fingerprint, GetStatus, error) {
 
 			time, _ := time.Parse(publishedTimeLayout, strings.Join(words[4:6], " "))
 			status.Publication = time
-			status.Address = net.ParseIP(words[6])
-			status.ORPort = StringToPort(words[7])
-			status.DirPort = StringToPort(words[8])
+			status.Address.IPv4Address = net.ParseIP(words[6])
+			status.Address.IPv4ORPort = StringToPort(words[7])
+			status.Address.IPv4DirPort = StringToPort(words[8])
+
+		case "a":
+			status.Address.IPv6Address, status.Address.IPv6ORPort = parseIPv6AddressAndPort(words[1])
 
 		case "s":
 			status.Flags = *parseRouterFlags(words[1:])
@@ -527,7 +570,7 @@ func extractMetaInfo(r io.Reader, c *Consensus) error {
 // object filter.
 func (filter *ObjectFilter) MatchesRouterStatus(status *RouterStatus) bool {
 
-	if filter.HasIPAddr(status.Address) {
+	if filter.HasIPAddr(status.Address.IPv4Address) || (filter.HasIPAddr(status.Address.IPv6Address)) {
 		return true
 	}
 
