@@ -615,7 +615,7 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 
 // ParseRawConsensus parses a raw consensus (in string format) and
 // returns a network consensus if parsing was successful.
-func ParseRawConsensus(rawConsensus string) (*Consensus, error) {
+func ParseRawConsensus(rawConsensus string, lazy bool) (*Consensus, error) {
 	// First line of the string is the annotation
 	consensus := strings.SplitN(rawConsensus, "\n", 2)
 
@@ -630,7 +630,7 @@ func ParseRawConsensus(rawConsensus string) (*Consensus, error) {
 		if annotation.Equals(parsedAnnon) {
 			r := strings.NewReader(consensus[1])
 
-			return parseConsensusUnchecked(r, false)
+			return parseConsensusUnchecked(r, lazy)
 		}
 	}
 

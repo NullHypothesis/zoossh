@@ -373,7 +373,7 @@ func TestParseRawConsensus(t *testing.T) {
 
 	consensusString := string(consensusBytes)
 
-	consensus, err := ParseRawConsensus(consensusString)
+	consensus, err := ParseRawConsensus(consensusString, true)
 	if err != nil {
 		t.Fatal(err)
 	}
