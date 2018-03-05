@@ -5,7 +5,9 @@ package zoossh
 import (
 	"bufio"
 	"encoding/base64"
+	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -355,5 +357,45 @@ func TestConsensusToSlice(t *testing.T) {
 		if _, found := consensus.Get(status.Fingerprint); !found {
 			t.Error("Router status in slice not found in map.")
 		}
+	}
+}
+
+func TestParseRawConsensus(t *testing.T) {
+	// Only run this test if the consensus file is there.
+	if _, err := os.Stat(consensusFile); os.IsNotExist(err) {
+		t.Skipf("skipping because of missing %s", consensusFile)
+	}
+
+	consensusBytes, err := ioutil.ReadFile(consensusFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	consensusString := string(consensusBytes)
+
+	consensus, err := ParseRawConsensus(consensusString)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	consensusSlice := consensus.ToSlice()
+	if consensus.Length() != len(consensusSlice) {
+		t.Error("Consensus slice length differs from map length.")
+	}
+
+	for _, getStatus := range consensusSlice {
+		status := getStatus()
+		if _, found := consensus.Get(status.Fingerprint); !found {
+			t.Error("Router status in slice not found in map.")
+		}
+	}
+
+	consensusFileCheck, err := ParseConsensusFile(consensusFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if reflect.DeepEqual(consensus, consensusFileCheck) {
+		t.Error("Expected getting the consensus data from the file or string made from said file to be the same.")
 	}
 }
