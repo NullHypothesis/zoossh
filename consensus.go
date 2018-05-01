@@ -616,25 +616,9 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 // ParseRawConsensus parses a raw consensus (in string format) and
 // returns a network consensus if parsing was successful.
 func ParseRawConsensus(rawConsensus string, lazy bool) (*Consensus, error) {
-	// First line of the string is the annotation
-	consensus := strings.SplitN(rawConsensus, "\n", 2)
+	r := strings.NewReader(rawConsensus)
 
-	// CheckAnnotation
-	parsedAnnon, err := parseAnnotation(consensus[0])
-	if err != nil {
-		return nil, err
-	}
-
-	// Check we support the observed annotation.
-	for annotation := range consensusAnnotations {
-		if annotation.Equals(parsedAnnon) {
-			r := strings.NewReader(consensus[1])
-
-			return parseConsensusUnchecked(r, lazy)
-		}
-	}
-
-	return nil, fmt.Errorf("Unexpected file annotation: %s", parsedAnnon)
+	return parseConsensus(r, lazy)
 }
 
 // LazilyParseConsensusFile parses the given file and returns a network
