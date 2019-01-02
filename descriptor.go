@@ -76,10 +76,12 @@ type RouterDescriptor struct {
 	NTorOnionKey string
 	SigningKey   string
 
-	RawAccept string
-	RawReject string
-	Accept    []*ExitPattern
-	Reject    []*ExitPattern
+	RawAccept     string
+	RawReject     string
+	RawExitPolicy string
+
+	Accept []*ExitPattern
+	Reject []*ExitPattern
 }
 
 type RouterDescriptors struct {
@@ -320,9 +322,11 @@ func ParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, error
 
 		case "reject":
 			descriptor.RawReject += words[1] + " "
+			descriptor.RawExitPolicy += words[0] + " " + words[1] + "\n"
 
 		case "accept":
 			descriptor.RawAccept += words[1] + " "
+			descriptor.RawExitPolicy += words[0] + " " + words[1] + "\n"
 		}
 	}
 
