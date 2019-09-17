@@ -93,26 +93,34 @@ type RouterDescriptors struct {
 
 // String implements the String as well as the Object interface.  It returns
 // the descriptor's string representation.
-func (rds *RouterDescriptor) String() string {
+func (rd *RouterDescriptor) String() string {
 
 	return fmt.Sprintf("%s,%s,%s,%d,%d,%s,%d,%s,%s,%s",
-		rds.Fingerprint,
-		rds.Nickname,
-		rds.Address,
-		rds.ORPort,
-		rds.DirPort,
-		rds.Published.Format(time.RFC3339),
-		rds.Uptime,
-		strings.Replace(rds.OperatingSystem, ",", "", -1),
-		strings.Replace(rds.TorVersion, ",", "", -1),
-		strings.Replace(rds.Contact, ",", "", -1))
+		rd.Fingerprint,
+		rd.Nickname,
+		rd.Address,
+		rd.ORPort,
+		rd.DirPort,
+		rd.Published.Format(time.RFC3339),
+		rd.Uptime,
+		strings.Replace(rd.OperatingSystem, ",", "", -1),
+		strings.Replace(rd.TorVersion, ",", "", -1),
+		strings.Replace(rd.Contact, ",", "", -1))
 }
 
 // GetFingerprint implements the Object interface.  It returns the descriptor's
 // fingerprint.
-func (rds *RouterDescriptor) GetFingerprint() Fingerprint {
+func (rd *RouterDescriptor) GetFingerprint() Fingerprint {
 
-	return rds.Fingerprint
+	return rd.Fingerprint
+}
+
+// HasFamily returns true if the given relay identified by its fingerprint is
+// part of this relay's family.
+func (rd *RouterDescriptor) HasFamily(fingerprint Fingerprint) bool {
+
+	_, ok := rd.Family[SanitiseFingerprint(fingerprint)]
+	return ok
 }
 
 // Length implements the ObjectSet interface.  It returns the length of the
@@ -210,14 +218,6 @@ func (rds *RouterDescriptors) Set(fingerprint Fingerprint, descriptor *RouterDes
 	rds.RouterDescriptors[SanitiseFingerprint(fingerprint)] = func() *RouterDescriptor {
 		return descriptor
 	}
-}
-
-// HasFamily returns true if the given relay identified by its fingerprint is
-// part of this relay's family.
-func (rds *RouterDescriptor) HasFamily(fingerprint Fingerprint) bool {
-
-	_, ok := rds.Family[SanitiseFingerprint(fingerprint)]
-	return ok
 }
 
 // LazyParseRawDescriptor lazily parses a raw router descriptor (in string

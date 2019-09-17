@@ -143,7 +143,7 @@ func GetAnnotation(fileName string) (*Annotation, error) {
 
 	annotation, _, err := readAnnotation(fd)
 	if err != nil {
-		return nil, fmt.Errorf("could not read file annotation for \"%s\": %s", fileName, err)
+		return nil, fmt.Errorf("could not read file annotation for %q: %s", fileName, err)
 	}
 
 	return annotation, nil
