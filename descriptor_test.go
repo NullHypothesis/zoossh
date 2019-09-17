@@ -24,7 +24,9 @@ func BenchmarkDescriptorParsing(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		ParseDescriptorFile(serverDescriptorFile)
+		if _, err := ParseDescriptorFile(serverDescriptorFile); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 

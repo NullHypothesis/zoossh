@@ -376,7 +376,7 @@ func LazyParseRawStatus(rawStatus string) (Fingerprint, GetStatus, error) {
 		}
 	}
 
-	return "", nil, fmt.Errorf("Could not extract relay fingerprint.")
+	return "", nil, fmt.Errorf("could not extract relay fingerprint")
 }
 
 // ParseRawStatus parses a raw router status (in string format) and returns the
@@ -455,7 +455,7 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 		start = bytes.Index(data, []byte("\nr "))
 		if start < 0 {
 			if atEOF {
-				return 0, nil, fmt.Errorf("Cannot find beginning of status entry: \"\\nr \"")
+				return 0, nil, fmt.Errorf("cannot find beginning of status entry: \"\\nr \"")
 			}
 			// Request more data.
 			return 0, nil, nil
@@ -474,7 +474,7 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 		return start + end, data[start : start+end], bufio.ErrFinalToken
 	}
 	if atEOF {
-		return start, nil, fmt.Errorf("Cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
+		return start, nil, fmt.Errorf("cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
 	}
 	// Request more data.
 	return 0, nil, nil
@@ -484,8 +484,6 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 // (such as its validity times) and writes it to the provided consensus struct.
 // It assumes that the type annotation has already been read.
 func extractMetaInfo(r io.Reader, c *Consensus) error {
-
-	var err error
 
 	br := bufio.NewReader(r)
 	c.MetaInfo = make(map[string][]byte)
@@ -516,6 +514,7 @@ func extractMetaInfo(r io.Reader, c *Consensus) error {
 		}
 	}
 
+	var err error
 	// Define a parser for validity timestamps
 	parseTime := func(line []byte) (time.Time, error) {
 		return time.Parse("2006-01-02 15:04:05", string(line))

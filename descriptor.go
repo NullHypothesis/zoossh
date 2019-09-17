@@ -248,7 +248,7 @@ func LazyParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, e
 		}
 	}
 
-	return "", nil, fmt.Errorf("Could not extract descriptor fingerprint.")
+	return "", nil, fmt.Errorf("could not extract descriptor fingerprint")
 }
 
 // ParseRawDescriptor parses a raw router descriptor (in string format) and
@@ -346,12 +346,12 @@ func extractDescriptor(data []byte, atEOF bool) (advance int, token []byte, err 
 		start = bytes.Index(data, []byte("\nrouter "))
 		if start < 0 {
 			if atEOF {
-				return 0, nil, fmt.Errorf("Cannot find beginning of descriptor: \"\\nrouter \"")
+				return 0, nil, fmt.Errorf("cannot find beginning of descriptor: \"\\nrouter \"")
 			}
 			// Request more data.
 			return 0, nil, nil
 		}
-		start += 1
+		start++
 	}
 
 	marker := []byte("\n-----END SIGNATURE-----\n")
@@ -360,7 +360,7 @@ func extractDescriptor(data []byte, atEOF bool) (advance int, token []byte, err 
 		return start + end + len(marker), data[start : start+end+len(marker)], nil
 	}
 	if atEOF {
-		return start, nil, fmt.Errorf("Cannot find end of descriptor: %q", marker)
+		return start, nil, fmt.Errorf("cannot find end of descriptor: %q", marker)
 	}
 	// Request more data.
 	return start, nil, nil

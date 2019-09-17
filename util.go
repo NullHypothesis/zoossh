@@ -128,7 +128,7 @@ func readAndCheckAnnotation(r io.Reader, expected map[Annotation]bool) (io.Reade
 		}
 	}
 
-	return nil, fmt.Errorf("Unexpected file annotation: %s", observed)
+	return nil, fmt.Errorf("unexpected file annotation: %s", observed)
 }
 
 // GetAnnotation obtains and returns the given file's annotation.  If anything
@@ -143,7 +143,7 @@ func GetAnnotation(fileName string) (*Annotation, error) {
 
 	annotation, _, err := readAnnotation(fd)
 	if err != nil {
-		return nil, fmt.Errorf("Could not read file annotation for \"%s\": %s", fileName, err)
+		return nil, fmt.Errorf("could not read file annotation for \"%s\": %s", fileName, err)
 	}
 
 	return annotation, nil
@@ -168,7 +168,10 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 
 	// Set file descriptor back because NewScanner() reads and buffers large
 	// chunks of data.
-	fd.Seek(before+int64(len(annotation)), os.SEEK_SET)
+	_, err = fd.Seek(before+int64(len(annotation)), io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("unable to seek file: %s with error: %v", fd.Name(), err)
+	}
 
 	observed, err := parseAnnotation(annotation)
 	if err != nil {
@@ -182,7 +185,7 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 		}
 	}
 
-	return fmt.Errorf("Unexpected file annotation: %q", annotation)
+	return fmt.Errorf("unexpected file annotation: %q", annotation)
 }
 
 // Dissects the given file into string chunks by using the given string
@@ -249,7 +252,7 @@ func LoadDescriptorFromDigest(descriptorDir, digest string, date time.Time) (*Ro
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		fileName = filepath.Join(descriptorDir, prevTopDir, digest[0:1], digest[1:2], digest)
 		if _, err := os.Stat(fileName); os.IsNotExist(err) {
-			return nil, fmt.Errorf("Could not find digest file %s in %s", digest, descriptorDir)
+			return nil, fmt.Errorf("could not find digest file %s in %s", digest, descriptorDir)
 		}
 	}
 
@@ -259,7 +262,7 @@ func LoadDescriptorFromDigest(descriptorDir, digest string, date time.Time) (*Ro
 	}
 
 	if descs.Length() != 1 {
-		return nil, fmt.Errorf("More than one descriptor in digest file %s.  Bug?", fileName)
+		return nil, fmt.Errorf("more than one descriptor in digest file %s.  Bug?", fileName)
 	}
 
 	var d *RouterDescriptor
