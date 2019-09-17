@@ -93,44 +93,44 @@ type RouterDescriptors struct {
 
 // String implements the String as well as the Object interface.  It returns
 // the descriptor's string representation.
-func (desc *RouterDescriptor) String() string {
+func (rds *RouterDescriptor) String() string {
 
 	return fmt.Sprintf("%s,%s,%s,%d,%d,%s,%d,%s,%s,%s",
-		desc.Fingerprint,
-		desc.Nickname,
-		desc.Address,
-		desc.ORPort,
-		desc.DirPort,
-		desc.Published.Format(time.RFC3339),
-		desc.Uptime,
-		strings.Replace(desc.OperatingSystem, ",", "", -1),
-		strings.Replace(desc.TorVersion, ",", "", -1),
-		strings.Replace(desc.Contact, ",", "", -1))
+		rds.Fingerprint,
+		rds.Nickname,
+		rds.Address,
+		rds.ORPort,
+		rds.DirPort,
+		rds.Published.Format(time.RFC3339),
+		rds.Uptime,
+		strings.Replace(rds.OperatingSystem, ",", "", -1),
+		strings.Replace(rds.TorVersion, ",", "", -1),
+		strings.Replace(rds.Contact, ",", "", -1))
 }
 
 // GetFingerprint implements the Object interface.  It returns the descriptor's
 // fingerprint.
-func (desc *RouterDescriptor) GetFingerprint() Fingerprint {
+func (rds *RouterDescriptor) GetFingerprint() Fingerprint {
 
-	return desc.Fingerprint
+	return rds.Fingerprint
 }
 
 // Length implements the ObjectSet interface.  It returns the length of the
 // router descriptors.
-func (descs *RouterDescriptors) Length() int {
+func (rds *RouterDescriptors) Length() int {
 
-	return len(descs.RouterDescriptors)
+	return len(rds.RouterDescriptors)
 }
 
 // Iterate implements the ObjectSet interface.  Using a channel, it iterates
 // over and returns all router descriptors.  The given object filter can be
 // used to filter descriptors, e.g., by fingerprint.
-func (descs *RouterDescriptors) Iterate(filter *ObjectFilter) <-chan Object {
+func (rds *RouterDescriptors) Iterate(filter *ObjectFilter) <-chan Object {
 
 	ch := make(chan Object)
 
 	go func() {
-		for _, getDesc := range descs.RouterDescriptors {
+		for _, getDesc := range rds.RouterDescriptors {
 			desc := getDesc()
 			if filter == nil || filter.IsEmpty() || filter.MatchesRouterDescriptor(desc) {
 				ch <- desc
@@ -145,19 +145,19 @@ func (descs *RouterDescriptors) Iterate(filter *ObjectFilter) <-chan Object {
 // GetObject implements the ObjectSet interface.  It returns the object
 // identified by the given fingerprint.  If the object is not present in the
 // set, false is returned, otherwise true.
-func (desc *RouterDescriptors) GetObject(fingerprint Fingerprint) (Object, bool) {
+func (rds *RouterDescriptors) GetObject(fingerprint Fingerprint) (Object, bool) {
 
-	return desc.Get(fingerprint)
+	return rds.Get(fingerprint)
 }
 
 // Merge merges the given object set with itself.
-func (descs *RouterDescriptors) Merge(objs ObjectSet) {
+func (rds *RouterDescriptors) Merge(objs ObjectSet) {
 
-	for desc := range descs.Iterate(nil) {
-		fpr := desc.GetFingerprint()
-		_, exists := descs.Get(fpr)
+	for rdesc := range rds.Iterate(nil) {
+		fpr := rdesc.GetFingerprint()
+		_, exists := rds.Get(fpr)
 		if !exists {
-			descs.Set(fpr, desc.(*RouterDescriptor))
+			rds.Set(fpr, rdesc.(*RouterDescriptor))
 		}
 	}
 }
@@ -177,15 +177,15 @@ func NewRouterDescriptor() *RouterDescriptor {
 }
 
 // ToSlice converts the given router descriptors to a slice.
-func (rd *RouterDescriptors) ToSlice() []GetDescriptor {
+func (rds *RouterDescriptors) ToSlice() []GetDescriptor {
 
-	length := rd.Length()
+	length := rds.Length()
 	descs := make([]GetDescriptor, length)
 
 	i := 0
-	for _, getDesc := range rd.RouterDescriptors {
+	for _, getDesc := range rds.RouterDescriptors {
 		descs[i] = getDesc
-		i += 1
+		i++
 	}
 
 	return descs
@@ -193,9 +193,9 @@ func (rd *RouterDescriptors) ToSlice() []GetDescriptor {
 
 // Get returns the router descriptor for the given fingerprint and a boolean
 // value indicating if the descriptor could be found.
-func (d *RouterDescriptors) Get(fingerprint Fingerprint) (*RouterDescriptor, bool) {
+func (rds *RouterDescriptors) Get(fingerprint Fingerprint) (*RouterDescriptor, bool) {
 
-	getDescriptor, exists := d.RouterDescriptors[SanitiseFingerprint(fingerprint)]
+	getDescriptor, exists := rds.RouterDescriptors[SanitiseFingerprint(fingerprint)]
 	if !exists {
 		return nil, exists
 	}
@@ -205,18 +205,18 @@ func (d *RouterDescriptors) Get(fingerprint Fingerprint) (*RouterDescriptor, boo
 
 // Set adds a new fingerprint mapping to a function returning the router
 // descriptor.
-func (d *RouterDescriptors) Set(fingerprint Fingerprint, descriptor *RouterDescriptor) {
+func (rds *RouterDescriptors) Set(fingerprint Fingerprint, descriptor *RouterDescriptor) {
 
-	d.RouterDescriptors[SanitiseFingerprint(fingerprint)] = func() *RouterDescriptor {
+	rds.RouterDescriptors[SanitiseFingerprint(fingerprint)] = func() *RouterDescriptor {
 		return descriptor
 	}
 }
 
 // HasFamily returns true if the given relay identified by its fingerprint is
 // part of this relay's family.
-func (desc *RouterDescriptor) HasFamily(fingerprint Fingerprint) bool {
+func (rds *RouterDescriptor) HasFamily(fingerprint Fingerprint) bool {
 
-	_, ok := desc.Family[SanitiseFingerprint(fingerprint)]
+	_, ok := rds.Family[SanitiseFingerprint(fingerprint)]
 	return ok
 }
 
@@ -257,7 +257,7 @@ func LazyParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, e
 // LazyParseRawDescriptor, parsing is *not* delayed.
 func ParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, error) {
 
-	var descriptor *RouterDescriptor = NewRouterDescriptor()
+	var descriptor = NewRouterDescriptor()
 
 	lines := strings.Split(rawDescriptor, "\n")
 

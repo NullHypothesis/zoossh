@@ -207,11 +207,11 @@ func (c *Consensus) Set(fingerprint Fingerprint, status *RouterStatus) {
 // Subtract removes all routers which are part of the given consensus b from
 // consensus a.  It returns a new consensus which is the result of the
 // subtraction.
-func (a *Consensus) Subtract(b *Consensus) *Consensus {
+func (c *Consensus) Subtract(b *Consensus) *Consensus {
 
 	var remainder = NewConsensus()
 
-	for fingerprint, getStatus := range a.RouterStatuses {
+	for fingerprint, getStatus := range c.RouterStatuses {
 
 		_, exists := b.RouterStatuses[fingerprint]
 		if !exists {
@@ -225,11 +225,11 @@ func (a *Consensus) Subtract(b *Consensus) *Consensus {
 // Intersect determines the intersection between the given consensus b and
 // consensus a.  It returns a new consensus which is the intersection of both
 // given consensuses.
-func (a *Consensus) Intersect(b *Consensus) *Consensus {
+func (c *Consensus) Intersect(b *Consensus) *Consensus {
 
 	var intersection = NewConsensus()
 
-	for fingerprint, getStatus := range a.RouterStatuses {
+	for fingerprint, getStatus := range c.RouterStatuses {
 
 		_, exists := b.RouterStatuses[fingerprint]
 		if exists {
