@@ -121,7 +121,7 @@ func readAndCheckAnnotation(r io.Reader, expected map[Annotation]bool) (io.Reade
 		return nil, err
 	}
 
-	for annotation, _ := range expected {
+	for annotation := range expected {
 		// We support the observed annotation.
 		if annotation.Equals(observed) {
 			return r, nil
@@ -178,7 +178,7 @@ func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
 		return err
 	}
 
-	for annotation, _ := range expected {
+	for annotation := range expected {
 		// We support the observed annotation.
 		if annotation.Equals(observed) {
 			return nil

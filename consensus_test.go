@@ -59,7 +59,7 @@ func BenchmarkConsensusParsingAndGetting(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		consensus, _ := ParseConsensusFile(consensusFile)
-		for fingerprint, _ := range consensus.RouterStatuses {
+		for fingerprint := range consensus.RouterStatuses {
 			consensus.Get(fingerprint)
 		}
 	}
@@ -76,7 +76,7 @@ func BenchmarkLConsensusParsingAndGetting(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		consensus, _ := LazilyParseConsensusFile(consensusFile)
-		for fingerprint, _ := range consensus.RouterStatuses {
+		for fingerprint := range consensus.RouterStatuses {
 			consensus.Get(fingerprint)
 		}
 	}

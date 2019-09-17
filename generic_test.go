@@ -84,16 +84,16 @@ func TestInterfaces(t *testing.T) {
 
 	// Test the Iterate() function.
 	counter := 0
-	for _ = range consensus.Iterate(nil) {
-		counter += 1
+	for range consensus.Iterate(nil) {
+		counter++
 	}
 	if counter != consensus.Length() {
 		t.Error("Failed to iterate over all router statuses in consensus.")
 	}
 
 	counter = 0
-	for _ = range descriptors.Iterate(nil) {
-		counter += 1
+	for range descriptors.Iterate(nil) {
+		counter++
 	}
 	if counter != descriptors.Length() {
 		t.Error("Failed to iterate over all descriptors in descriptor set.")
@@ -182,7 +182,7 @@ func TestConsensusFiltering(t *testing.T) {
 	filter.AddFingerprint(Fingerprint("9B94CD0B7B8057EAF21BA7F023B7A1C8CA9CE645"))
 	filter.AddFingerprint(Fingerprint("CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912"))
 	count := 0
-	for _ = range consensus.Iterate(filter) {
+	for range consensus.Iterate(filter) {
 		count++
 	}
 	if count != 2 {
@@ -190,7 +190,7 @@ func TestConsensusFiltering(t *testing.T) {
 	}
 
 	count = 0
-	for _ = range consensus.Iterate(nil) {
+	for range consensus.Iterate(nil) {
 		count++
 	}
 	if count != numRouterStatuses {
@@ -198,7 +198,7 @@ func TestConsensusFiltering(t *testing.T) {
 	}
 
 	count = 0
-	for _ = range consensus.Iterate(NewObjectFilter()) {
+	for range consensus.Iterate(NewObjectFilter()) {
 		count++
 	}
 	if count != numRouterStatuses {
@@ -221,7 +221,7 @@ func TestDescriptorFiltering(t *testing.T) {
 	filter.AddNickname("leenuts")
 	filter.AddNickname("manningsnowden2")
 	count := 0
-	for _ = range descriptors.Iterate(filter) {
+	for range descriptors.Iterate(filter) {
 		count++
 	}
 	if count != 2 {
@@ -229,7 +229,7 @@ func TestDescriptorFiltering(t *testing.T) {
 	}
 
 	count = 0
-	for _ = range descriptors.Iterate(nil) {
+	for range descriptors.Iterate(nil) {
 		count++
 	}
 	if count != numServerDescriptors {
@@ -237,7 +237,7 @@ func TestDescriptorFiltering(t *testing.T) {
 	}
 
 	count = 0
-	for _ = range descriptors.Iterate(NewObjectFilter()) {
+	for range descriptors.Iterate(NewObjectFilter()) {
 		count++
 	}
 	if count != numServerDescriptors {

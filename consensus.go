@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-var consensusAnnotations map[Annotation]bool = map[Annotation]bool{
+var consensusAnnotations = map[Annotation]bool{
 	// The file format we currently (try to) support.
 	Annotation{"network-status-consensus-3", "1", "0"}: true,
 }
@@ -177,7 +177,7 @@ func (c *Consensus) ToSlice() []GetStatus {
 	i := 0
 	for _, getStatus := range c.RouterStatuses {
 		statuses[i] = getStatus
-		i += 1
+		i++
 	}
 
 	return statuses
@@ -250,7 +250,7 @@ func (address RouterAddress) String() string {
 	}
 	ipV4stringAddress = append(ipV4stringAddress, fmt.Sprintf("%v", address.IPv4ORPort))
 	ipV4stringAddress = append(ipV4stringAddress, fmt.Sprintf("%v", address.IPv4DirPort))
-	ipV4Join := fmt.Sprintf(strings.Join(ipV4stringAddress, "|"))
+	ipV4Join := fmt.Sprint(strings.Join(ipV4stringAddress, "|"))
 
 	if address.IPv6Address == nil {
 		return ipV4Join
@@ -259,7 +259,7 @@ func (address RouterAddress) String() string {
 	ipV6stringAddress = append(ipV6stringAddress, address.IPv6Address.String())
 	ipV6stringAddress = append(ipV6stringAddress, fmt.Sprintf("%v", address.IPv6ORPort))
 
-	ipV6Join := fmt.Sprintf(strings.Join(ipV6stringAddress, "|"))
+	ipV6Join := fmt.Sprint(strings.Join(ipV6stringAddress, "|"))
 	return ipV4Join + "," + ipV6Join
 }
 
@@ -305,12 +305,12 @@ func (flags RouterFlags) String() string {
 		stringFlags = append(stringFlags, "V2Dir")
 	}
 
-	return fmt.Sprintf(strings.Join(stringFlags, "|"))
+	return fmt.Sprint(strings.Join(stringFlags, "|"))
 }
 
 func parseRouterFlags(flags []string) *RouterFlags {
 
-	var routerFlags *RouterFlags = new(RouterFlags)
+	var routerFlags = new(RouterFlags)
 
 	for _, flag := range flags {
 		switch flag {
@@ -384,7 +384,7 @@ func LazyParseRawStatus(rawStatus string) (Fingerprint, GetStatus, error) {
 // if there were any during parsing.
 func ParseRawStatus(rawStatus string) (Fingerprint, GetStatus, error) {
 
-	var status *RouterStatus = new(RouterStatus)
+	var status = new(RouterStatus)
 
 	lines := strings.Split(rawStatus, "\n")
 
@@ -460,7 +460,7 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 			// Request more data.
 			return 0, nil, nil
 		}
-		start += 1
+		start++
 	}
 
 	end := bytes.Index(data[start:], []byte("\nr "))
