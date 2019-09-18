@@ -27,7 +27,9 @@ func BenchmarkConsensusParsing(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		ParseConsensusFile(consensusFile)
+		if _, err := ParseConsensusFile(consensusFile); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -40,7 +42,9 @@ func BenchmarkLConsensusParsing(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		LazilyParseConsensusFile(consensusFile)
+		if _, err := LazilyParseConsensusFile(consensusFile); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -55,7 +59,7 @@ func BenchmarkConsensusParsingAndGetting(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		consensus, _ := ParseConsensusFile(consensusFile)
-		for fingerprint, _ := range consensus.RouterStatuses {
+		for fingerprint := range consensus.RouterStatuses {
 			consensus.Get(fingerprint)
 		}
 	}
@@ -72,7 +76,7 @@ func BenchmarkLConsensusParsingAndGetting(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		consensus, _ := LazilyParseConsensusFile(consensusFile)
-		for fingerprint, _ := range consensus.RouterStatuses {
+		for fingerprint := range consensus.RouterStatuses {
 			consensus.Get(fingerprint)
 		}
 	}
@@ -287,7 +291,10 @@ func TestExtractMetaInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	extractMetaInfo(r, consensus)
+	err = extractMetaInfo(r, consensus)
+	if err != nil {
+		t.Errorf("unable to extractMetaInfo with error: %v", err)
+	}
 	if consensus.ValidAfter != time.Date(2014, time.December, 8, 16, 0, 0, 0, time.UTC) {
 		t.Error("ValidAfter time in consensus invalid.")
 	}
@@ -411,7 +418,7 @@ p reject 1-65535`)
 
 	if getStatus1().Address.String() != "193.11.166.194|9000|80" {
 		t.Error("Failed to pretty print IP addresses", getStatus1().Address.String())
-  }
+	}
 }
 
 func TestParseRawConsensus(t *testing.T) {

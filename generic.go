@@ -104,7 +104,7 @@ func parseWithAnnotation(r io.Reader, annotation *Annotation) (ObjectSet, error)
 		return parseConsensusUnchecked(r, false)
 	}
 
-	return nil, fmt.Errorf("Could not find suitable parser.")
+	return nil, fmt.Errorf("could not find suitable parser")
 }
 
 // ParseUnknown first reads a type annotation and passes it along with the rest

@@ -33,7 +33,9 @@ func BenchmarkDescriptorLookup(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		LoadDescriptorFromDigest(serverDescriptorDir, digest, date)
+		if _, err := LoadDescriptorFromDigest(serverDescriptorDir, digest, date); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -154,7 +156,9 @@ func TestParseAnnotation(t *testing.T) {
 func BenchmarkParseAnnotation(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
-		parseAnnotation("@type server-descriptor 1.0")
+		if _, err := parseAnnotation("@type server-descriptor 1.0"); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -267,7 +271,11 @@ func TestCheckAnnotationDescriptor(t *testing.T) {
 	if err != nil {
 		t.Error("CheckAnnotation() failed to accept annotation: ", err)
 	}
-	fd.Seek(0, 0)
+
+	_, err = fd.Seek(0, 0)
+	if err != nil {
+		t.Errorf("failed to seek file %s with error %v", fd.Name(), err)
+	}
 
 	err = CheckAnnotation(fd, consensusAnnotations)
 	if err == nil {
@@ -293,7 +301,11 @@ func TestCheckAnnotationConsensus(t *testing.T) {
 	if err != nil {
 		t.Error("CheckAnnotation() failed to accept annotation: ", err)
 	}
-	fd.Seek(0, 0)
+
+	_, err = fd.Seek(0, 0)
+	if err != nil {
+		t.Errorf("could not seek %s with error %v", fd.Name(), err)
+	}
 
 	err = CheckAnnotation(fd, descriptorAnnotations)
 	if err == nil {
