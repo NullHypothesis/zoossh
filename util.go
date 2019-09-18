@@ -66,7 +66,7 @@ func parseAnnotation(annotationText string) (*Annotation, error) {
 	return annotation, nil
 }
 
-// Decodes the given Base64-encoded string and returns the resulting string.
+// Base64ToString decodes the given Base64-encoded string and returns the resulting string.
 // If there are errors during decoding, an error string is returned.
 func Base64ToString(encoded string) (string, error) {
 
@@ -149,7 +149,7 @@ func GetAnnotation(fileName string) (*Annotation, error) {
 	return annotation, nil
 }
 
-// Checks the type annotation in the given file.  The Annotation struct
+// CheckAnnotation checks the type annotation in the given file.  The Annotation struct
 // determines what we want to see in the file.  If we don't see the expected
 // annotation, an error string is returned.
 func CheckAnnotation(fd *os.File, expected map[Annotation]bool) error {
