@@ -655,6 +655,19 @@ func parseConsensusFile(fileName string, lazy bool) (*Consensus, error) {
 	return parseConsensus(fd, lazy)
 }
 
+// parseConsensusFileUnchecked is a wrapper around parseConsensusUnchecked that opens the named
+// file for parsing.
+func parseConsensusFileUnchecked(fileName string, lazy bool) (*Consensus, error) {
+
+	fd, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	return parseConsensusUnchecked(fd, lazy)
+}
+
 // ParseRawConsensus parses a raw consensus (in string format) and
 // returns a network consensus if parsing was successful.
 func ParseRawConsensus(rawConsensus string, lazy bool) (*Consensus, error) {
@@ -681,4 +694,34 @@ func LazilyParseConsensusFile(fileName string) (*Consensus, error) {
 func ParseConsensusFile(fileName string) (*Consensus, error) {
 
 	return parseConsensusFile(fileName, false)
+}
+
+// ParseRawUnsafeConsensus parses a raw consensus (in string format) and
+// returns a network consensus if parsing was successful.
+func ParseRawUnsafeConsensus(rawConsensus string, lazy bool) (*Consensus, error) {
+	r := strings.NewReader(rawConsensus)
+
+	return parseConsensusUnchecked(r, lazy)
+}
+
+// LazilyParseUnsafeConsensusFile parses the given file without checking the
+// annotations and returns a network consensus if parsing was successful. If
+// there were any errors, consensus if parsing was successful.  If there were
+// any errors, an error string is returned.  Parsing of the router statuses is
+// delayed until they are accessed using the Get method.  As a result, this
+// function is recommended as long as you won't access more than ~50% of all
+// statuses.
+func LazilyParseUnsafeConsensusFile(fileName string) (*Consensus, error) {
+
+	return parseConsensusFileUnchecked(fileName, true)
+}
+
+// ParseUnsafeConsensusFile parses the given file without checking the annotations
+// and returns a network consensus if parsing was successful. If there were any
+// errors, an error string is returned.  In contrast to LazilyParseConsensusFile,
+// parsing of router statuses is *not* delayed.  As a result, this function is
+// recommended as long as you will access most of all statuses.
+func ParseUnsafeConsensusFile(fileName string) (*Consensus, error) {
+
+	return parseConsensusFileUnchecked(fileName, false)
 }
