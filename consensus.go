@@ -22,6 +22,13 @@ var consensusAnnotations = map[Annotation]bool{
 	Annotation{"network-status-consensus-3", "1", "0"}: true,
 }
 
+var bridgeNetworkStatusAnnotations = map[Annotation]bool{
+	// The file format we currently (try to) support.
+	Annotation{"bridge-network-status", "1", "2"}: true,
+}
+
+var ErrNoSatusEntry = fmt.Errorf("cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
+
 type GetStatus func() *RouterStatus
 
 type RouterFlags struct {
@@ -474,7 +481,7 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 		return start + end, data[start : start+end], bufio.ErrFinalToken
 	}
 	if atEOF {
-		return start, nil, fmt.Errorf("cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
+		return len(data), data[start:], ErrNoSatusEntry
 	}
 	// Request more data.
 	return 0, nil, nil
@@ -483,9 +490,8 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 // extractMetainfo extracts meta information of the open consensus document
 // (such as its validity times) and writes it to the provided consensus struct.
 // It assumes that the type annotation has already been read.
-func extractMetaInfo(r io.Reader, c *Consensus) error {
+func extractMetaInfo(br *bufio.Reader, c *Consensus) error {
 
-	br := bufio.NewReader(r)
 	c.MetaInfo = make(map[string][]byte)
 
 	// Read the initial metadata. We'll later extract information of particular
@@ -505,11 +511,11 @@ func extractMetaInfo(r io.Reader, c *Consensus) error {
 		c.MetaInfo[key] = bytes.TrimSpace(split[1])
 
 		// Look ahead to check if we've reached the end of the unique keys.
-		nextKey, err := br.Peek(10)
+		nextKey, err := br.Peek(11)
 		if err != nil {
 			return err
 		}
-		if bytes.Equal(nextKey, []byte("dir-source")) {
+		if bytes.HasPrefix(nextKey, []byte("dir-source")) || bytes.HasPrefix(nextKey, []byte("fingerprint")) {
 			break
 		}
 	}
@@ -590,8 +596,9 @@ func (filter *ObjectFilter) MatchesRouterStatus(status *RouterStatus) bool {
 // correct type.  The function returns a network consensus if parsing was
 // successful.  If there were any errors, an error string is returned.  If the
 // lazy argument is set to true, parsing of the router statuses is delayed until
-// they are accessed.
-func parseConsensusUnchecked(r io.Reader, lazy bool) (*Consensus, error) {
+// they are accessed. If strict it will only accept valid consensus files, not
+// strict is used to parse bridge networkstatus files or when unknown what kind is.
+func parseConsensusUnchecked(r io.Reader, lazy bool, strict bool) (*Consensus, error) {
 
 	var consensus = NewConsensus()
 	var statusParser func(string) (Fingerprint, GetStatus, error)
@@ -602,19 +609,20 @@ func parseConsensusUnchecked(r io.Reader, lazy bool) (*Consensus, error) {
 		statusParser = ParseRawStatus
 	}
 
-	err := extractMetaInfo(r, consensus)
-	if err != nil {
+	br := bufio.NewReader(r)
+	err := extractMetaInfo(br, consensus)
+	if strict && err != nil {
 		return nil, err
 	}
 
 	// We will read raw router statuses from this channel.
 	queue := make(chan QueueUnit)
-	go DissectFile(r, extractStatusEntry, queue)
+	go DissectFile(br, extractStatusEntry, queue)
 
 	// Parse incoming router statuses until the channel is closed by the remote
 	// end.
 	for unit := range queue {
-		if unit.Err != nil {
+		if unit.Err != nil && (strict || !errors.Is(unit.Err, ErrNoSatusEntry)) {
 			return nil, unit.Err
 		}
 
@@ -634,12 +642,18 @@ func parseConsensusUnchecked(r io.Reader, lazy bool) (*Consensus, error) {
 // consensusAnnotations.
 func parseConsensus(r io.Reader, lazy bool) (*Consensus, error) {
 
-	r, err := readAndCheckAnnotation(r, consensusAnnotations)
+	strict := false
+	annotation, r, err := readAnnotation(r)
 	if err != nil {
 		return nil, err
 	}
+	if _, ok := consensusAnnotations[*annotation]; ok {
+		strict = true
+	} else if _, ok := bridgeNetworkStatusAnnotations[*annotation]; !ok {
+		return nil, fmt.Errorf("unexpected file annotation: %s", annotation)
+	}
 
-	return parseConsensusUnchecked(r, lazy)
+	return parseConsensusUnchecked(r, lazy, strict)
 }
 
 // parseConsensusFile is a wrapper around parseConsensus that opens the named
@@ -665,7 +679,7 @@ func parseConsensusFileUnchecked(fileName string, lazy bool) (*Consensus, error)
 	}
 	defer fd.Close()
 
-	return parseConsensusUnchecked(fd, lazy)
+	return parseConsensusUnchecked(fd, lazy, false)
 }
 
 // ParseRawConsensus parses a raw consensus (in string format) and
@@ -701,7 +715,7 @@ func ParseConsensusFile(fileName string) (*Consensus, error) {
 func ParseRawUnsafeConsensus(rawConsensus string, lazy bool) (*Consensus, error) {
 	r := strings.NewReader(rawConsensus)
 
-	return parseConsensusUnchecked(r, lazy)
+	return parseConsensusUnchecked(r, lazy, false)
 }
 
 // LazilyParseUnsafeConsensusFile parses the given file without checking the
