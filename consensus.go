@@ -27,7 +27,7 @@ var bridgeNetworkStatusAnnotations = map[Annotation]bool{
 	Annotation{"bridge-network-status", "1", "2"}: true,
 }
 
-var ErrNoSatusEntry = fmt.Errorf("cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
+var ErrNoStatusEntry = fmt.Errorf("cannot find the end of status entry: \"\\nr \" or \"directory-signature\"")
 
 type GetStatus func() *RouterStatus
 
@@ -481,7 +481,7 @@ func extractStatusEntry(data []byte, atEOF bool) (advance int, token []byte, err
 		return start + end, data[start : start+end], bufio.ErrFinalToken
 	}
 	if atEOF {
-		return len(data), data[start:], ErrNoSatusEntry
+		return len(data), data[start:], ErrNoStatusEntry
 	}
 	// Request more data.
 	return 0, nil, nil
@@ -622,7 +622,7 @@ func parseConsensusUnchecked(r io.Reader, lazy bool, strict bool) (*Consensus, e
 	// Parse incoming router statuses until the channel is closed by the remote
 	// end.
 	for unit := range queue {
-		if unit.Err != nil && (strict || !errors.Is(unit.Err, ErrNoSatusEntry)) {
+		if unit.Err != nil && (strict || !errors.Is(unit.Err, ErrNoStatusEntry)) {
 			return nil, unit.Err
 		}
 

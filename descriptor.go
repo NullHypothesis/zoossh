@@ -460,6 +460,19 @@ func parseDescriptorFile(fileName string, lazy bool) (*RouterDescriptors, error)
 	return parseDescriptor(fd, lazy)
 }
 
+// parseDescriptorFileUnchecked is a wrapper around parseDescriptorUnchecked
+// that opens the named file for parsing.
+func parseDescriptorFileUnchecked(fileName string, lazy bool) (*RouterDescriptors, error) {
+
+	fd, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	return parseDescriptorUnchecked(fd, lazy)
+}
+
 // LazilyParseDescriptorFile parses the given file and returns a pointer to
 // RouterDescriptors containing the router descriptors.  If there were any
 // errors, an error string is returned.  Note that parsing is done lazily which
@@ -478,4 +491,24 @@ func LazilyParseDescriptorFile(fileName string) (*RouterDescriptors, error) {
 func ParseDescriptorFile(fileName string) (*RouterDescriptors, error) {
 
 	return parseDescriptorFile(fileName, false)
+}
+
+// LazilyParseDescriptorFile parses the given file without checking the annotations
+// and returns a pointer to RouterDescriptors containing the router descriptors.
+// If there were any errors, an error string is returned. Note that parsing is done
+// lazily which means that it is delayed until a given router descriptor is accessed.
+// That pays off when you know that you will not parse most router descriptors.
+func LazilyParseUnsafeDescriptorFile(fileName string) (*RouterDescriptors, error) {
+
+	return parseDescriptorFileUnchecked(fileName, true)
+}
+
+// ParseDescriptorFile parses the given file without checking the annotations and
+// returns a pointer to RouterDescriptors containing the router descriptors.
+// If there were any errors, an error string is returned. Note that in contrast to
+// LazilyParseDescriptorFile, parsing is *not* delayed. That pays off when you
+// know that you will parse most router descriptors.
+func ParseUnsafeDescriptorFile(fileName string) (*RouterDescriptors, error) {
+
+	return parseDescriptorFileUnchecked(fileName, false)
 }
