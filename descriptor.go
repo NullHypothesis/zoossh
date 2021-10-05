@@ -1,4 +1,4 @@
-// Parses files containing server descriptors.
+// Parses files containing server or bridge descriptors.
 
 package zoossh
 
@@ -20,7 +20,8 @@ const (
 
 var descriptorAnnotations = map[Annotation]bool{
 	// The file format we currently (try to) support.
-	Annotation{"server-descriptor", "1", "0"}: true,
+	Annotation{"server-descriptor", "1", "0"}:        true,
+	Annotation{"bridge-server-descriptor", "1", "2"}: true,
 }
 
 type GetDescriptor func() *RouterDescriptor
@@ -71,6 +72,10 @@ type RouterDescriptor struct {
 
 	// The "hidden-service-dir" line.
 	HiddenServiceDir bool
+
+	// The "bridge-distribution-request" line
+	// it only exist on the bridge-descriptors
+	BridgeDistributionRequest string
 
 	OnionKey     string
 	NTorOnionKey string
@@ -327,6 +332,9 @@ func ParseRawDescriptor(rawDescriptor string) (Fingerprint, GetDescriptor, error
 		case "accept":
 			descriptor.RawAccept += words[1] + " "
 			descriptor.RawExitPolicy += words[0] + " " + words[1] + "\n"
+
+		case "bridge-distribution-request":
+			descriptor.BridgeDistributionRequest = words[1]
 		}
 	}
 
