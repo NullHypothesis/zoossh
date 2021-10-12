@@ -291,7 +291,8 @@ func TestExtractMetaInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = extractMetaInfo(r, consensus)
+	br := bufio.NewReader(r)
+	err = extractMetaInfo(br, consensus)
 	if err != nil {
 		t.Errorf("unable to extractMetaInfo with error: %v", err)
 	}
@@ -326,7 +327,8 @@ func TestExtractSharedRandom(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = extractMetaInfo(r, c)
+	br := bufio.NewReader(r)
+	err = extractMetaInfo(br, c)
 	if err != nil {
 		t.Error(err)
 	}

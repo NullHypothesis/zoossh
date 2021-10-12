@@ -101,7 +101,11 @@ func parseWithAnnotation(r io.Reader, annotation *Annotation) (ObjectSet, error)
 	}
 
 	if _, ok := consensusAnnotations[*annotation]; ok {
-		return parseConsensusUnchecked(r, false)
+		return parseConsensusUnchecked(r, false, true)
+	}
+
+	if _, ok := bridgeNetworkStatusAnnotations[*annotation]; ok {
+		return parseConsensusUnchecked(r, false, false)
 	}
 
 	return nil, fmt.Errorf("could not find suitable parser")
